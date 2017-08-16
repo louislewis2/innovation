@@ -11,7 +11,7 @@
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.DependencyInjection.Extensions;
 
-#if !(NET451 || NET452 || NET46)
+#if !(NETFULL)
     using System.Runtime.Loader;
 #endif
 
@@ -63,7 +63,7 @@
             var assemblyDictionary = new Dictionary<string, Assembly>();
 
             // TODO: Workaround for known bug: https://github.com/dotnet/cli/issues/4037
-#if (NET451 || NET452 || NET46)
+#if (NETFULL)
             var applicationDomainAssemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
             applicationDomainAssemblies.ForEach(x => assemblyDictionary.TryAdd(x.GetName().Name, x));
 #endif
@@ -132,7 +132,7 @@
                 }
                 catch (Exception ex)
                 {
-#if (NET451 || NET452 || NET46)
+#if (NETFULL)
                     try
                     {
                         var asm = Assembly.Load(AssemblyName.GetAssemblyName(assembly.Location));
@@ -227,7 +227,7 @@
                         {
                             try
                             {
-#if !(NET451 || NET452 || NET46)
+#if !(NETFULL)
                                 var loadedAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(file);
 #else
                                 var loadedAssembly = Assembly.LoadFile(file);

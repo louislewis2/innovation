@@ -8,7 +8,10 @@ Details coming soon
 1. .Net 4.5.1
 2. .Net 4.5.2
 3. .Net 4.6
-4. .Net Standard 1.6
+4. .Net 4.6.1
+5. .Net 4.6.2
+6. .Net Standard 1.6
+7. .Net Standard 2.0
 
 ## Samples
 

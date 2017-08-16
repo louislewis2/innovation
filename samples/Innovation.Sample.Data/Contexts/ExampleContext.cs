@@ -26,7 +26,11 @@
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+#if (NETSTANDARD1_6 || NETFULL)
             optionsBuilder.UseInMemoryDatabase();
+#else
+            optionsBuilder.UseInMemoryDatabase("Innovation_Sample_Database");
+#endif
         }
 
         #endregion Overrides
