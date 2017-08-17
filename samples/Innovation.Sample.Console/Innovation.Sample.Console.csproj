@@ -2,14 +2,23 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFrameworks>netcoreapp2.0;netcoreapp1.1</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1'">
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="1.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="1.1.2" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.0' OR '$(TargetFramework)' == 'net462' ">
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="2.0.0" />
+  </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\..\src\Innovation.Api\Innovation.Api.csproj" />
     <ProjectReference Include="..\..\src\Innovation.ServiceBus.InProcess\Innovation.ServiceBus.InProcess.csproj" />

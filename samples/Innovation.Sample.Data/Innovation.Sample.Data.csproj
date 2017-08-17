@@ -1,11 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard1.6</TargetFramework>
+    <TargetFrameworks>netstandard1.6;netstandard2.0</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.6'">
+    <DefineConstants>COREFX;NETCORE;NETSTANDARD;NETSTANDARD1_6</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
+    <DefineConstants>COREFX;NETCORE;NETSTANDARD;NETSTANDARD2_0</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6'">
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="1.1.2" />
   </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="2.0.0" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Innovation.Api\Innovation.Api.csproj" />
     <ProjectReference Include="..\Innovation.Sample.Api\Innovation.Sample.Api.csproj" />

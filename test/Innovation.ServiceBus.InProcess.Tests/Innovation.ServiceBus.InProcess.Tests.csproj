@@ -1,9 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFrameworks>net451;net452;net46;net461;net462;netcoreapp1.1;netcoreapp2.0</TargetFrameworks>
+    <AssetTargetFallback>$(AssetTargetFallback);portable-net45+win8+wp8+wpa81;</AssetTargetFallback>
   </PropertyGroup>
-  <ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462' OR '$(TargetFramework)' == 'netcoreapp2.0'">
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="2.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
+    <PackageReference Include="xunit" Version="2.2.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="2.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="2.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net451' OR '$(TargetFramework)' == 'net452' OR '$(TargetFramework)' == 'net46' OR '$(TargetFramework)' == 'net461' OR '$(TargetFramework)' == 'netcoreapp1.1'">
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="1.1.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.2" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="1.1.2" />
@@ -13,12 +26,14 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="1.1.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="1.1.2" />
   </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\..\src\Innovation.Api\Innovation.Api.csproj" />
     <ProjectReference Include="..\..\src\Innovation.ServiceBus.InProcess\Innovation.ServiceBus.InProcess.csproj" />
     <ProjectReference Include="..\Innovation.ApiSample\Innovation.ApiSample.csproj" />
     <ProjectReference Include="..\Innovation.SampleApi.Consumer\Innovation.SampleApi.Consumer.csproj" />
   </ItemGroup>
+  
   <ItemGroup>
     <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
   </ItemGroup>
