@@ -89,6 +89,7 @@
 
             var loggerFactory = ServiceProvider.GetService<ILoggerFactory>();
             loggerFactory.AddDebug(LogLevel.Debug);
+            loggerFactory.AddConsole(LogLevel.Debug);
         }
 
         #endregion Private Methods

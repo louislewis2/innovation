@@ -13,7 +13,7 @@
         {
             await Task.Run(() =>
             {
-                Console.WriteLine($"Create Customer Has Just Fired: { commandResult.Success }");
+                Console.WriteLine($"Create Customer Has Just Fired. Successfully Completed?: { commandResult.Success }");
             });
         }
     }
