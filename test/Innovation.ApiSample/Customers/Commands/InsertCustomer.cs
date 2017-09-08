@@ -8,9 +8,12 @@
     {
         #region Constructor
 
-        public InsertCustomer(string name)
+        public InsertCustomer(string name, string userName)
         {
             this.Name = name;
+            this.UserName = userName;
+
+            this.ExistsOnGithub = null;
         }
 
         #endregion Constructor
@@ -21,7 +24,22 @@
         [StringLength(30, MinimumLength = 3, ErrorMessage = "Name needs to be between 3 and 30 characters")]
         public string Name { get; private set; }
 
+        [Required]
+        [StringLength(35, MinimumLength = 10, ErrorMessage = "Username needs to be between 10 and 35 characters")]
+        public string UserName { get; private set; }
+
+        public bool? ExistsOnGithub { get; private set; }
+
         #endregion Properties
+
+        #region Methods
+
+        public void SetGithubStatus(bool existsOnGithub)
+        {
+            this.ExistsOnGithub = existsOnGithub;
+        }
+
+        #endregion Methods
 
         #region ICommand
 

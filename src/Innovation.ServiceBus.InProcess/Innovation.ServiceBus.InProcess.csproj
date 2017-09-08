@@ -8,6 +8,8 @@
     <PackageTags>Innovation; CQRS, Service Bus, InProcess</PackageTags>
     <Company>e3P</Company>
     <AssetTargetFallback>$(AssetTargetFallback);portable-net45+win8+wp8+wpa81;</AssetTargetFallback>
+    <PackageProjectUrl>https://github.com/louislewis2/innovation</PackageProjectUrl>
+    <PackageReleaseNotes>Add command interceptor support</PackageReleaseNotes>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net451'">

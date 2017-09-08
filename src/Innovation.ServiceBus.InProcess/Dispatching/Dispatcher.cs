@@ -14,6 +14,7 @@
     using Api.Messaging;
     using Api.Commanding;
     using Api.Dispatching;
+    using Api.Interceptors;
     using Api.CommandHelpers;
 
     /// <summary>
@@ -142,11 +143,13 @@
             try
             {
                 this.logger.LogDebug(1, "Entered Command Dispatcher. {instanceIdentifier} - {CommandName} - {CommandType}", this.instanceIdentifier, command.EventName, command.GetType());
+                this.logger.LogTrace("Command Details {@Command}", command);
 
                 ICommandResult result = null;
 
                 var commandHandler = this.Resolve<TCommand>();
                 var commandReactors = this.ResolveCommandReactors<TCommand>();
+                var commandInterceptors = this.ResolveCommandInterceptors<TCommand>();
                 var commandResultReactors = this.ResolveCommandResultReactors<TCommand>();
 
                 if (commandHandler == null)
@@ -172,6 +175,27 @@
                     this.logger.LogDebug(1, "Notifying Command Reactors");
                     await this.NotifyCommandReactors(commandReactors, command);
                 });
+
+                if (commandInterceptors != null)
+                {
+                    this.logger.LogDebug(1, "Found {CommandInterceptorCount} Command Interceptors", commandInterceptors.Length);
+
+                    foreach (var commandInterceptor in commandInterceptors)
+                    {
+                        // Using this nested try / catch block to avoid interceptor exceptions breaking the pipeline
+                        try
+                        {
+                            this.logger.LogDebug($"The Command Interceptor: {commandInterceptor.GetType()} Is About To Get Run");
+
+                            await commandInterceptor.Intercept(command);
+                        }
+                        catch (Exception ex)
+                        {
+                            this.logger.LogDebug($"The Command Interceptor: {commandInterceptor.GetType()} Raised An Exception");
+                            this.logger.LogError(ex.Message, ex);
+                        }
+                    }
+                }
 
                 var validationResults = new List<ValidationResult>();
                 var validationContext = new ValidationContext(command, this.serviceProvider, null);
@@ -369,6 +393,13 @@
             var commandReactors = this.serviceProvider.GetServices<ICommandReactor<TCommand>>();
 
             return commandReactors.ToArray();
+        }
+
+        private ICommandInterceptor<TCommand>[] ResolveCommandInterceptors<TCommand>() where TCommand : ICommand
+        {
+            var commandInterceptors = this.serviceProvider.GetServices<ICommandInterceptor<TCommand>>();
+
+            return commandInterceptors.ToArray();
         }
 
         private ICommandResultReactor<TCommand>[] ResolveCommandResultReactors<TCommand>() where TCommand : ICommand

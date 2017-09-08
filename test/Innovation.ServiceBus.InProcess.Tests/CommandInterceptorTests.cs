@@ -6,24 +6,10 @@
 
     using Innovation.ApiSample.Customers.Commands;
 
-    public class CommandTests : TestBase
+    public class CommandInterceptorTests : TestBase
     {
         [Fact]
-        public void Can_Handle_Insert_Customer()
-        {
-            // Arrange
-            var insertCustomerCommand = new InsertCustomer("Innovation", "somecrazynamethatdoesnotexistyet");
-
-            // Act
-            var dispatcher = this.GetDispatcher();
-            var canCommand = dispatcher.CanCommand(insertCustomerCommand);
-
-            // Assert
-            Assert.True(canCommand);
-        }
-
-        [Fact]
-        public async Task Can_Insert_Customer()
+        public async Task Can_Run_Intercept_Expecting_False()
         {
             // Arrange
             var insertCustomerCommand = new InsertCustomer("Innovation", "somecrazynamethatdoesnotexistyet");
@@ -33,7 +19,23 @@
             var insertCustomerCommandResult = await dispatcher.Command(insertCustomerCommand, false);
 
             // Assert
-            Assert.True(insertCustomerCommandResult.Success);
+            Assert.NotNull(insertCustomerCommand.ExistsOnGithub);
+            Assert.False(insertCustomerCommand.ExistsOnGithub.Value);
+        }
+
+        [Fact]
+        public async Task Can_Run_Intercept_Expecting_True()
+        {
+            // Arrange
+            var insertCustomerCommand = new InsertCustomer("Innovation", "louislewis2");
+
+            // Act
+            var dispatcher = this.GetDispatcher();
+            var insertCustomerCommandResult = await dispatcher.Command(insertCustomerCommand, false);
+
+            // Assert
+            Assert.NotNull(insertCustomerCommand.ExistsOnGithub);
+            Assert.True(insertCustomerCommand.ExistsOnGithub.Value);
         }
     }
 }

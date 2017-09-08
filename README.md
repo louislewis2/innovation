@@ -19,6 +19,10 @@ TODO: Add details here
 
 TODO: Add details here
 
+### Command Interceptors
+
+TODO: Add details here
+
 ### Command Reactors
 
 TODO: Add details here

@@ -20,6 +20,7 @@
     using Api.Messaging;
     using Api.Reactions;
     using Api.Commanding;
+    using Api.Interceptors;
 
     public class InnovationRuntime
     {
@@ -156,6 +157,7 @@
                     var isQueryHandler = type.AsType().IsGenericTypeOf(typeof(IQueryHandler<IQuery, IQueryResult>));
                     var isCommandReactor = type.AsType().IsGenericTypeOf(typeof(ICommandReactor<ICommand>));
                     var isCommandResultReactor = type.AsType().IsGenericTypeOf(typeof(ICommandResultReactor<ICommand>));
+                    var isCommandInterceptor = type.AsType().IsGenericTypeOf(typeof(ICommandInterceptor<ICommand>));
 
                     if (isCommandHandler)
                     {
@@ -204,6 +206,16 @@
                         foreach (var queryHandlerInterface in queryHandlerInterfaces)
                         {
                             this.services.TryAddTransient(queryHandlerInterface, type.AsType());
+                        }
+                    }
+
+                    if (isCommandInterceptor)
+                    {
+                        var commandInterceptorInterfaces = type.ImplementedInterfaces.Where(x => x.IsGenericTypeOf(typeof(ICommandInterceptor<ICommand>)));
+
+                        foreach (var coomandInterceptorInterface in commandInterceptorInterfaces)
+                        {
+                            this.services.TryAddTransient(coomandInterceptorInterface, type.AsType());
                         }
                     }
                 }
