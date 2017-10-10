@@ -33,7 +33,12 @@
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddLogging();
+            services.AddLogging(options =>
+            {
+                options.SetMinimumLevel(LogLevel.Debug);
+                options.AddDebug();
+            });
+
             services.AddOptions();
 
             services.AddSampleModule();
@@ -45,7 +50,6 @@
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            loggerFactory.AddDebug();
 
             if (env.IsDevelopment())
             {

@@ -2,24 +2,22 @@
 
   <PropertyGroup>
     <Description>Contains types and interfaces that are required</Description>
-    <TargetFrameworks>net451;net452;net46;netstandard1.6;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net452;net46;netstandard1.6;netstandard2.0</TargetFrameworks>
     <Authors>Louis Lewis</Authors>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <PackageTags>Innovation; CQRS</PackageTags>
     <Company>e3P</Company>
     <PackageProjectUrl>https://github.com/louislewis2/innovation</PackageProjectUrl>
-    <PackageReleaseNotes>Add command interceptor support</PackageReleaseNotes>
+    <PackageReleaseNotes>Dependency Updates</PackageReleaseNotes>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='net451' OR '$(TargetFramework)'=='net452' OR '$(TargetFramework)'=='net46'">
+  <ItemGroup Condition="'$(TargetFramework)'=='net452' OR '$(TargetFramework)'=='net46'">
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
-    <PackageReference Include="System.ComponentModel.Annotations" Version="4.3.0" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.6' OR '$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.ComponentModel.Annotations" Version="4.4.0" />
   </ItemGroup>
 

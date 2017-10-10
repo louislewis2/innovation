@@ -21,6 +21,8 @@
     using Api.Reactions;
     using Api.Commanding;
     using Api.Interceptors;
+    using Innovation.Api.Core;
+    using System.Collections;
 
     public class InnovationRuntime
     {
@@ -64,6 +66,8 @@
             var assemblyDictionary = new Dictionary<string, Assembly>();
 
             // TODO: Workaround for known bug: https://github.com/dotnet/cli/issues/4037
+            // If this is removed, the test's will not pass, as the handlers are not detected
+            // which of course will prevent users of this library from testing as well
 #if (NETFULL)
             var applicationDomainAssemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
             applicationDomainAssemblies.ForEach(x => assemblyDictionary.TryAdd(x.GetName().Name, x));
@@ -124,12 +128,13 @@
 
             foreach (var assembly in finalAssemblyList)
             {
+                this.logger.LogDebug("Processing Assembly: {Assembly}", assembly.GetName());
+
                 TypeInfo[] types = null;
 
                 try
                 {
-                    var asm = Assembly.Load(new AssemblyName(assembly.FullName));
-                    types = asm.DefinedTypes.ToArray();
+                    types = assembly.DefinedTypes.ToArray();
                 }
                 catch (Exception ex)
                 {
@@ -147,6 +152,8 @@
 
                 if (types == null)
                 {
+                    this.logger.LogDebug("No Defined Types Found");
+
                     continue;
                 }
 
@@ -163,8 +170,17 @@
                     {
                         var commandHandlerInterfaces = type.ImplementedInterfaces.Where(x => x.IsGenericTypeOf(typeof(ICommandHandler<ICommand>)));
 
+                        this.logger.LogDebug("{TypeName} Contains {Count} Command Handler's", type.Name, commandHandlerInterfaces.Count());
+
                         foreach (var commandHandlerInterface in commandHandlerInterfaces)
                         {
+                            var genericArguments = commandHandlerInterface.GetGenericArguments();
+
+                            if (genericArguments != null && genericArguments.Count() == 1)
+                            {
+                                this.logger.LogDebug("{TypeName} Handles {CommandName}", type.Name, genericArguments[0].Name);
+                            }
+
                             this.services.TryAddTransient(commandHandlerInterface, type.AsType());
                         }
                     }
@@ -172,6 +188,8 @@
                     if (isMessageHandler)
                     {
                         var queryHandlerInterfaces = type.ImplementedInterfaces.Where(x => x.IsGenericTypeOf(typeof(IMessageHandler<IMessage>)));
+
+                        this.logger.LogDebug("{TypeName} Contains {Count} Message Handler's", type.Name, queryHandlerInterfaces.Count());
 
                         foreach (var queryHandlerInterface in queryHandlerInterfaces)
                         {
@@ -183,8 +201,17 @@
                     {
                         var queryHandlerInterfaces = type.ImplementedInterfaces.Where(x => x.IsGenericTypeOf(typeof(IQueryHandler<IQuery, IQueryResult>)));
 
+                        this.logger.LogDebug("{TypeName} Contains {Count} Query Handler's", type.Name, queryHandlerInterfaces.Count());
+
                         foreach (var queryHandlerInterface in queryHandlerInterfaces)
                         {
+                            var genericArguments = queryHandlerInterface.GetGenericArguments();
+
+                            if (genericArguments != null && genericArguments.Count() == 2)
+                            {
+                                this.logger.LogDebug("{TypeName} Handles {QueryName} Returning {QueryResultName}", type.Name, genericArguments[0].Name, genericArguments[1].Name);
+                            }
+
                             this.services.TryAddTransient(queryHandlerInterface, type.AsType());
                         }
                     }
@@ -192,6 +219,8 @@
                     if (isCommandReactor)
                     {
                         var queryHandlerInterfaces = type.ImplementedInterfaces.Where(x => x.IsGenericTypeOf(typeof(ICommandReactor<ICommand>)));
+
+                        this.logger.LogDebug("{TypeName} Contains {Count} Command Reactor's", type.Name, queryHandlerInterfaces.Count());
 
                         foreach (var queryHandlerInterface in queryHandlerInterfaces)
                         {
@@ -203,6 +232,8 @@
                     {
                         var queryHandlerInterfaces = type.ImplementedInterfaces.Where(x => x.IsGenericTypeOf(typeof(ICommandResultReactor<ICommand>)));
 
+                        this.logger.LogDebug("{TypeName} Contains {Count} Command Result Reactor's", type.Name, queryHandlerInterfaces.Count());
+
                         foreach (var queryHandlerInterface in queryHandlerInterfaces)
                         {
                             this.services.TryAddTransient(queryHandlerInterface, type.AsType());
@@ -212,6 +243,8 @@
                     if (isCommandInterceptor)
                     {
                         var commandInterceptorInterfaces = type.ImplementedInterfaces.Where(x => x.IsGenericTypeOf(typeof(ICommandInterceptor<ICommand>)));
+
+                        this.logger.LogDebug("{TypeName} Contains {Count} Command Interceptor's", type.Name, commandInterceptorInterfaces.Count());
 
                         foreach (var coomandInterceptorInterface in commandInterceptorInterfaces)
                         {

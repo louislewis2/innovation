@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netcoreapp1.1;netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>net462;netcoreapp2.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp1.1' ">
@@ -45,8 +45,5 @@
     <ProjectReference Include="..\Innovation.Sample.Api\Innovation.Sample.Api.csproj" />
     <ProjectReference Include="..\Innovation.Sample.Data\Innovation.Sample.Data.csproj" />
   </ItemGroup>
-  <PropertyGroup>
-    <PackageTargetFallback>$(PackageTargetFallback);portable-net45+win8+wp8+wpa81;</PackageTargetFallback>
-  </PropertyGroup>
 
 </Project>
