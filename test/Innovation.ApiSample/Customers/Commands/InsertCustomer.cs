@@ -22,10 +22,12 @@
 
         [Required]
         [StringLength(30, MinimumLength = 3, ErrorMessage = "Name needs to be between 3 and 30 characters")]
+        [RegularExpression(@"^[a-zA-Z0-9]*$", ErrorMessage = "Name only allows alphanumeric characters")]
         public string Name { get; private set; }
 
         [Required]
-        [StringLength(35, MinimumLength = 10, ErrorMessage = "Username needs to be between 10 and 35 characters")]
+        [StringLength(35, MinimumLength = 10, ErrorMessage = "UserName needs to be between 10 and 35 characters")]
+        [RegularExpression(@"^[a-zA-Z0-9]*$", ErrorMessage = "UserName only allows alphanumeric characters")]
         public string UserName { get; private set; }
 
         public bool? ExistsOnGithub { get; private set; }
