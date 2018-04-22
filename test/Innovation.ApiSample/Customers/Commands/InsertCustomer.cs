@@ -2,9 +2,11 @@
 {
     using System.ComponentModel.DataAnnotations;
 
+    using Innovation.Api.Dispatching;
+
     using Api.Commanding;
 
-    public class InsertCustomer : ICommand
+    public class InsertCustomer : ICommand, IDispatcherContext
     {
         #region Constructor
 
@@ -31,6 +33,8 @@
         public string UserName { get; private set; }
 
         public bool? ExistsOnGithub { get; private set; }
+
+        public object DispatcherContext { get; set; }
 
         #endregion Properties
 

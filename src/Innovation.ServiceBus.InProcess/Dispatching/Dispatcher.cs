@@ -42,6 +42,12 @@
 
         #endregion Constructor
 
+        #region Properties
+
+        public object Context { get; set; }
+
+        #endregion Properties
+
         #region Methods
 
         public bool CanCommand<TCommand>(TCommand command) where TCommand : ICommand
@@ -142,6 +148,18 @@
         {
             try
             {
+                if (command is IDispatcherContext dispatcherContext)
+                {
+                    dispatcherContext.DispatcherContext = this.Context;
+                }
+
+                var auditStore = this.serviceProvider.GetService<IAuditStore>();
+
+                if (auditStore != null)
+                {
+                    this.logger.LogDebug("Audit Store Found - {AuditStoreType}", auditStore.GetType());
+                }
+
                 this.logger.LogDebug(1, "Entered Command Dispatcher. {instanceIdentifier} - {CommandName} - {CommandType}", this.instanceIdentifier, command.EventName, command.GetType());
                 this.logger.LogTrace("Command Details {@Command}", command);
 
@@ -155,6 +173,7 @@
                 if (commandHandler == null)
                 {
                     this.logger.LogError("Command Handler Not Found - {CommandName} - {CommandType}", command.EventName, command.GetType());
+
                     throw new CommandHandlerNotFoundException(command);
                 }
 
@@ -236,6 +255,11 @@
 
                 this.logger.LogDebug(1, "Returning From Dispatcher {FinalResult}", finalResult);
 
+                if (auditStore != null)
+                {
+                    await auditStore.Log(correlationId: this.instanceIdentifier, command: command, commandResult: finalResult);
+                }
+
                 return finalResult;
             }
             catch (Exception ex)
@@ -256,7 +280,19 @@
         {
             this.logger.LogDebug(2, "Entered Message Dispatcher. {instanceIdentifier}", this.instanceIdentifier);
 
+            var auditStore = this.serviceProvider.GetService<IAuditStore>();
+
+            if (auditStore != null)
+            {
+                this.logger.LogDebug("Audit Store Found - {AuditStoreType}", auditStore.GetType());
+            }
+
             var handlers = this.ResolveMessageHandlers<TMessage>();
+
+            if (auditStore != null)
+            {
+                await auditStore.Log(correlationId: this.instanceIdentifier, message: message);
+            }
 
             foreach (var handler in handlers)
             {
@@ -268,6 +304,13 @@
         {
             this.logger.LogDebug(2, "Entered MessageFor Dispatcher. {instanceIdentifier}", this.instanceIdentifier);
 
+            var auditStore = this.serviceProvider.GetService<IAuditStore>();
+
+            if (auditStore != null)
+            {
+                this.logger.LogDebug("Audit Store Found - {AuditStoreType}", auditStore.GetType());
+            }
+
             var handlers = this.ResolveMessageHandlers<TMessage>();
 
             var addressableHandlers = handlers.OfType<IAddressable>().Where(x => x.Handles.Intersect(addresses).Any()).Cast<IMessageHandler<TMessage>>();
@@ -276,6 +319,11 @@
             {
                 this.logger.LogError("Addressable Message Handlers Not Found - {MessageName} - {MessageType} - {Addresses}", message.EventName, message.GetType(), addresses);
                 return;
+            }
+
+            if (auditStore != null)
+            {
+                await auditStore.Log(correlationId: this.instanceIdentifier, message: message);
             }
 
             foreach (var handler in addressableHandlers)
@@ -288,6 +336,13 @@
         {
             try
             {
+                var auditStore = this.serviceProvider.GetService<IAuditStore>();
+
+                if (auditStore != null)
+                {
+                    this.logger.LogDebug("Audit Store Found - {AuditStoreType}", auditStore.GetType());
+                }
+
                 this.logger.LogDebug(3, "Entered Query Dispatcher. {instanceIdentifier}", this.instanceIdentifier);
 
                 var queryHandler = this.Resolve<TQuery, TQueryResult>();
@@ -301,6 +356,11 @@
                 this.logger.LogDebug(3, "Found Handler - {HandlerType} - {ResultType}", query.GetType(), typeof(TQueryResult));
 
                 this.logger.LogDebug(3, "Calling QueryHandler");
+
+                if (auditStore != null)
+                {
+                    await auditStore.Log(correlationId: this.instanceIdentifier, query: query);
+                }
 
                 return await queryHandler.Handle(query);
             }
@@ -317,6 +377,13 @@
             {
                 this.logger.LogDebug(3, "Entered Query Dispatcher. {instanceIdentifier}", this.instanceIdentifier);
 
+                var auditStore = this.serviceProvider.GetService<IAuditStore>();
+
+                if (auditStore != null)
+                {
+                    this.logger.LogDebug("Audit Store Found - {AuditStoreType}", auditStore.GetType());
+                }
+
                 var queryHandlers = this.ResolveAll<TQuery, TQueryResult>();
 
                 var addressableHandlers = queryHandlers.OfType<IAddressable>().Where(x => x.Handles.Intersect(addresses).Any()).Cast<IQueryHandler<TQuery, TQueryResult>>();
@@ -332,6 +399,11 @@
                 this.logger.LogDebug(3, "Found Handler - {HandlerType} - {ResultType}", query.GetType(), typeof(TQueryResult));
 
                 this.logger.LogDebug(3, "Calling QueryHandler");
+
+                if (auditStore != null)
+                {
+                    await auditStore.Log(correlationId: this.instanceIdentifier, query: query);
+                }
 
                 return await queryHandler.Handle(query);
             }
