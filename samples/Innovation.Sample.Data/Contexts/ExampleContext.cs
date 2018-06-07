@@ -9,6 +9,7 @@
         #region Properties
 
         public DbSet<AnemicCustomer> Customers { get; set; }
+        public DbSet<AnemicLogEntry> LogEntries { get; set; }
 
         #endregion Properties
 
