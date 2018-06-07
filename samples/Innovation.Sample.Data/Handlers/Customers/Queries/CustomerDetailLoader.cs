@@ -5,6 +5,7 @@
     using Microsoft.EntityFrameworkCore;
 
     using Innovation.Api.Querying;
+
     using Innovation.Sample.Data.Anemics;
     using Innovation.Sample.Data.Contexts;
     using Innovation.Sample.Api.Customers.Queries;

@@ -6,6 +6,7 @@
     using Microsoft.Extensions.DependencyInjection;
 
     using Innovation.Api.Dispatching;
+
     using Innovation.Sample.Api.Paging;
     using Innovation.Sample.Api.Customers.Queries;
     using Innovation.Sample.Api.Customers.Commands;

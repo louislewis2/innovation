@@ -4,6 +4,7 @@
     using System.Threading.Tasks;
 
     using Innovation.Api.Reactions;
+
     using Innovation.Sample.Api.Customers.Commands;
 
     public class CreateCustomerReactor : ICommandReactor<CreateCustomer>

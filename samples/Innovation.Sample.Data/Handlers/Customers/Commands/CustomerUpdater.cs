@@ -7,6 +7,7 @@
 
     using Innovation.Api.Commanding;
     using Innovation.Api.CommandHelpers;
+
     using Innovation.Sample.Data.Contexts;
     using Innovation.Sample.Api.Customers.Commands;
 
