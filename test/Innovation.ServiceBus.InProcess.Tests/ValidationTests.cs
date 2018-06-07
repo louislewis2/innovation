@@ -3,9 +3,9 @@
     using System.Threading.Tasks;
 
     using Xunit;
-
     using Innovation.Api.Commanding;
     using Innovation.Api.CommandHelpers;
+
     using Innovation.ApiSample.Customers.Commands;
 
     public class ValidationTests : TestBase
@@ -18,13 +18,13 @@
 
             // Act
             var dispatcher = this.GetDispatcher();
-            var commandResult = (await dispatcher.Command(insertCustomerCommand)).As<CommandResult>();
+            var commandResult = (await dispatcher.Command(command: insertCustomerCommand)).As<CommandResult>();
 
             // Assert
-            Assert.False(commandResult.Success);
+            Assert.False(condition: commandResult.Success);
             Assert.Equal(expected: 2, actual: commandResult.Errors.Length);
-            Assert.Equal("The Name field is required.", commandResult.Errors[0]);
-            Assert.Equal("The UserName field is required.", commandResult.Errors[1]);
+            Assert.Equal(expected: "The Name field is required.", actual: commandResult.Errors[0]);
+            Assert.Equal(expected: "The UserName field is required.", actual: commandResult.Errors[1]);
         }
 
         [Fact]
@@ -35,13 +35,13 @@
 
             // Act
             var dispatcher = this.GetDispatcher();
-            var commandResult = (await dispatcher.Command(insertCustomerCommand)).As<CommandResult>();
+            var commandResult = (await dispatcher.Command(command: insertCustomerCommand)).As<CommandResult>();
 
             // Assert
-            Assert.False(commandResult.Success);
+            Assert.False(condition: commandResult.Success);
             Assert.Equal(expected: 2, actual: commandResult.Errors.Length);
-            Assert.Equal("Name needs to be between 3 and 30 characters", commandResult.Errors[0]);
-            Assert.Equal("UserName needs to be between 10 and 35 characters", commandResult.Errors[1]);
+            Assert.Equal(expected: "Name needs to be between 3 and 30 characters", actual: commandResult.Errors[0]);
+            Assert.Equal(expected: "UserName needs to be between 10 and 35 characters", actual: commandResult.Errors[1]);
         }
 
         [Fact]
@@ -54,13 +54,13 @@
 
             // Act
             var dispatcher = this.GetDispatcher();
-            var commandResult = (await dispatcher.Command(insertCustomerCommand)).As<CommandResult>();
+            var commandResult = (await dispatcher.Command(command: insertCustomerCommand)).As<CommandResult>();
 
             // Assert
-            Assert.False(commandResult.Success);
+            Assert.False(condition: commandResult.Success);
             Assert.Equal(expected: 2, actual: commandResult.Errors.Length);
-            Assert.Equal("Name needs to be between 3 and 30 characters", commandResult.Errors[0]);
-            Assert.Equal("UserName needs to be between 10 and 35 characters", commandResult.Errors[1]);
+            Assert.Equal(expected: "Name needs to be between 3 and 30 characters", actual: commandResult.Errors[0]);
+            Assert.Equal(expected: "UserName needs to be between 10 and 35 characters", actual: commandResult.Errors[1]);
         }
 
         [Fact]
@@ -73,13 +73,13 @@
 
             // Act
             var dispatcher = this.GetDispatcher();
-            var commandResult = (await dispatcher.Command(insertCustomerCommand)).As<CommandResult>();
+            var commandResult = (await dispatcher.Command(command: insertCustomerCommand)).As<CommandResult>();
 
             // Assert
-            Assert.False(commandResult.Success);
+            Assert.False(condition: commandResult.Success);
             Assert.Equal(expected: 2, actual: commandResult.Errors.Length);
-            Assert.Equal("Name only allows alphanumeric characters", commandResult.Errors[0]);
-            Assert.Equal("UserName only allows alphanumeric characters", commandResult.Errors[1]);
+            Assert.Equal(expected: "Name only allows alphanumeric characters", actual: commandResult.Errors[0]);
+            Assert.Equal(expected: "UserName only allows alphanumeric characters", actual: commandResult.Errors[1]);
         }
 
         [Fact]
@@ -90,11 +90,11 @@
 
             // Act
             var dispatcher = this.GetDispatcher();
-            var commandResult = (await dispatcher.Command(insertCustomerCommand)).As<CommandResult>();
+            var commandResult = (await dispatcher.Command(command: insertCustomerCommand)).As<CommandResult>();
 
             // Assert
-            Assert.False(commandResult.Success);
-            Assert.Equal("Name needs to be between 3 and 30 characters", commandResult.Errors[0]);
+            Assert.False(condition: commandResult.Success);
+            Assert.Equal(expected: "Name needs to be between 3 and 30 characters", actual: commandResult.Errors[0]);
         }
     }
 }
