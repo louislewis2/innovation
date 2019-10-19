@@ -13,6 +13,7 @@
     using Api.Reactions;
     using Api.Messaging;
     using Api.Commanding;
+    using Api.Validation;
     using Api.Dispatching;
     using Api.Interceptors;
     using Api.CommandHelpers;
@@ -25,7 +26,6 @@
         #region Fields
 
         private readonly ILogger logger;
-        private readonly Guid instanceIdentifier = Guid.NewGuid();
         private readonly IServiceProvider serviceProvider;
 
         #endregion Fields
@@ -45,10 +45,16 @@
         #region Properties
 
         public object Context { get; set; }
+        public string CorrelationId { get; private set; } = Guid.NewGuid().ToString();
 
         #endregion Properties
 
         #region Methods
+
+        public void SetCorrelationId(string correlationId)
+        {
+            this.CorrelationId = correlationId;
+        }
 
         public bool CanCommand<TCommand>(TCommand command) where TCommand : ICommand
         {
@@ -151,6 +157,7 @@
                 if (command is IDispatcherContext dispatcherContext)
                 {
                     dispatcherContext.DispatcherContext = this.Context;
+                    dispatcherContext.CorrelationId = this.CorrelationId;
                 }
 
                 var auditStore = this.serviceProvider.GetService<IAuditStore>();
@@ -160,7 +167,7 @@
                     this.logger.LogDebug("Audit Store Found - {AuditStoreType}", auditStore.GetType());
                 }
 
-                this.logger.LogDebug(1, "Entered Command Dispatcher. {instanceIdentifier} - {CommandName} - {CommandType}", this.instanceIdentifier, command.EventName, command.GetType());
+                this.logger.LogDebug(1, "Entered Command Dispatcher. {correlationId} - {CommandName} - {CommandType}", this.CorrelationId, command.EventName, command.GetType());
                 this.logger.LogTrace("Command Details {@Command}", command);
 
                 ICommandResult result = null;
@@ -169,6 +176,7 @@
                 var commandReactors = this.ResolveCommandReactors<TCommand>();
                 var commandInterceptors = this.ResolveCommandInterceptors<TCommand>();
                 var commandResultReactors = this.ResolveCommandResultReactors<TCommand>();
+                var commandValidators = this.ResolveCommandValidators<TCommand>();
 
                 if (commandHandler == null)
                 {
@@ -178,6 +186,11 @@
                 }
 
                 this.logger.LogDebug(1, "Found Handler - {HandlerType}", commandHandler.GetType());
+
+                if (commandValidators != null)
+                {
+                    this.logger.LogDebug(1, "Found {CommandResultValidatorCount} Command Validators", commandValidators.Length);
+                }
 
                 if (commandResultReactors != null)
                 {
@@ -216,48 +229,62 @@
                     }
                 }
 
-                var validationResults = new List<ValidationResult>();
-                var validationContext = new ValidationContext(command, this.serviceProvider, null);
-                var validationPassed = Validator.TryValidateObject(command, validationContext, validationResults, true);
+                IValidationResult validationResult = null;
 
-                this.logger.LogDebug(1, "Command {CommandName} Initial Validation Result: {Status}", command.EventName, validationPassed);
-
-                if (!validationPassed && validationResults.Count > 0)
+                if(commandValidators != null && commandValidators?.Length > 0)
                 {
-                    result = new CommandResult();
-                    result.As<CommandResult>().Fail(validationResults);
-                }
-
-                if (command is IValidatableObject)
-                {
-                    this.logger.LogDebug(1, "Command {CommandName} Requires Self Validation", command.EventName);
-
-                    var selfValidationResults = ((IValidatableObject)command).Validate(validationContext);
-
-                    if (selfValidationResults != null && selfValidationResults.Count() > 0)
+                    foreach(var commandValidator in commandValidators)
                     {
-                        if (result == null)
-                        {
-                            result = new CommandResult();
-                        }
+                        validationResult = await commandValidator.Validate(command);
 
-                        result.As<CommandResult>().Fail(selfValidationResults);
+                        if (!validationResult.Success)
+                        {
+                            break;
+                        }
+                    }
+                }
+                else // If There Are No Explicit Validators, Try Validate Using Default Validator
+                {
+                    var validationResults = new List<ValidationResult>();
+                    var validationContext = new ValidationContext(command, this.serviceProvider, null);
+                    var validationPassed = Validator.TryValidateObject(command, validationContext, validationResults, true);
+
+                    this.logger.LogDebug(1, "Command {CommandName} Initial Validation Result: {Status}", command.EventName, validationPassed);
+
+                    if (!validationPassed && validationResults.Count > 0)
+                    {
+                        result = new CommandResult();
+                        result.As<CommandResult>().Fail(validationResults);
+                    }
+
+                    if (command is IValidatableObject)
+                    {
+                        this.logger.LogDebug(1, "Command {CommandName} Requires Self Validation", command.EventName);
+
+                        var selfValidationResults = ((IValidatableObject)command).Validate(validationContext);
+
+                        if (selfValidationResults != null && selfValidationResults.Count() > 0)
+                        {
+                            if (result == null)
+                            {
+                                result = new CommandResult();
+                            }
+
+                            result.As<CommandResult>().Fail(selfValidationResults);
+                        }
                     }
                 }
 
-                var finalResult = result == null ? await commandHandler.Handle(command) : result.Success ? await commandHandler.Handle(command) : result;
+                var finalResult = validationResult ?? (result == null ? await commandHandler.Handle(command) : result.Success ? await commandHandler.Handle(command) : result);
 
-                await Task.Run(async () =>
-                {
-                    this.logger.LogDebug(1, "Notifying Command Result Reactors");
-                    await this.NotifyCommandResultReactors(commandResultReactors, command, finalResult);
-                });
+                this.logger.LogDebug(1, "Notifying Command Result Reactors");
+                await this.NotifyCommandResultReactors(commandResultReactors, command, finalResult);
 
                 this.logger.LogDebug(1, "Returning From Dispatcher {FinalResult}", finalResult);
 
                 if (auditStore != null)
                 {
-                    await auditStore.Log(correlationId: this.instanceIdentifier, command: command, commandResult: finalResult);
+                    await auditStore.Log(correlationId: this.CorrelationId, command: command, commandResult: finalResult);
                 }
 
                 return finalResult;
@@ -267,7 +294,7 @@
                 this.logger.LogError(ex.Message, ex);
                 if (suppressExceptions)
                 {
-                    return this.CreateFromException(ex, command);
+                    return this.CreateFromException(ex);
                 }
                 else
                 {
@@ -278,7 +305,7 @@
 
         public async Task Message<TMessage>(TMessage message) where TMessage : IMessage
         {
-            this.logger.LogDebug(2, "Entered Message Dispatcher. {instanceIdentifier}", this.instanceIdentifier);
+            this.logger.LogDebug(2, "Entered Message Dispatcher. {correlationId}", this.CorrelationId);
 
             var auditStore = this.serviceProvider.GetService<IAuditStore>();
 
@@ -291,7 +318,7 @@
 
             if (auditStore != null)
             {
-                await auditStore.Log(correlationId: this.instanceIdentifier, message: message);
+                await auditStore.Log(correlationId: this.CorrelationId, message: message);
             }
 
             foreach (var handler in handlers)
@@ -302,7 +329,7 @@
 
         public async Task MessageFor<TMessage>(TMessage message, params string[] addresses) where TMessage : IMessage
         {
-            this.logger.LogDebug(2, "Entered MessageFor Dispatcher. {instanceIdentifier}", this.instanceIdentifier);
+            this.logger.LogDebug(2, "Entered MessageFor Dispatcher. {correlationId}", this.CorrelationId);
 
             var auditStore = this.serviceProvider.GetService<IAuditStore>();
 
@@ -323,7 +350,7 @@
 
             if (auditStore != null)
             {
-                await auditStore.Log(correlationId: this.instanceIdentifier, message: message);
+                await auditStore.Log(correlationId: this.CorrelationId, message: message);
             }
 
             foreach (var handler in addressableHandlers)
@@ -343,7 +370,7 @@
                     this.logger.LogDebug("Audit Store Found - {AuditStoreType}", auditStore.GetType());
                 }
 
-                this.logger.LogDebug(3, "Entered Query Dispatcher. {instanceIdentifier}", this.instanceIdentifier);
+                this.logger.LogDebug(3, "Entered Query Dispatcher. {correlationId}", this.CorrelationId);
 
                 var queryHandler = this.Resolve<TQuery, TQueryResult>();
 
@@ -359,7 +386,7 @@
 
                 if (auditStore != null)
                 {
-                    await auditStore.Log(correlationId: this.instanceIdentifier, query: query);
+                    await auditStore.Log(correlationId: this.CorrelationId, query: query);
                 }
 
                 return await queryHandler.Handle(query);
@@ -375,7 +402,7 @@
         {
             try
             {
-                this.logger.LogDebug(3, "Entered Query Dispatcher. {instanceIdentifier}", this.instanceIdentifier);
+                this.logger.LogDebug(3, "Entered Query Dispatcher. {correlationId}", this.CorrelationId);
 
                 var auditStore = this.serviceProvider.GetService<IAuditStore>();
 
@@ -402,7 +429,7 @@
 
                 if (auditStore != null)
                 {
-                    await auditStore.Log(correlationId: this.instanceIdentifier, query: query);
+                    await auditStore.Log(correlationId: this.CorrelationId, query: query);
                 }
 
                 return await queryHandler.Handle(query);
@@ -420,7 +447,7 @@
 
         private async Task NotifyCommandReactors<TCommand>(ICommandReactor<TCommand>[] commandReactors, TCommand command) where TCommand : ICommand
         {
-            this.logger.LogDebug(4, "Entered NotifyCommandReactors. {instanceIdentifier}", this.instanceIdentifier);
+            this.logger.LogDebug(4, "Entered NotifyCommandReactors. {correlationId}", this.CorrelationId);
 
             foreach (var reactor in commandReactors)
             {
@@ -435,18 +462,25 @@
             where TCommand : ICommand
             where TCommandResult : ICommandResult
         {
-            this.logger.LogDebug(5, "Entered NotifyCommandResultReactors. {instanceIdentifier}", this.instanceIdentifier);
+            this.logger.LogDebug(5, "Entered NotifyCommandResultReactors. {correlationId}", this.CorrelationId);
 
             foreach (var reactor in commandResultReactors)
             {
-                await Task.Run(() =>
+                await Task.Run(async () =>
                 {
-                    reactor.React(commandResult, command);
+                    try
+                    {
+                        await reactor.React(commandResult, command);
+                    }
+                    catch(Exception ex)
+                    {
+                        this.logger.LogError(5, "Error Occurred NotifyCommandResultReactors. {correlationId}", this.CorrelationId, ex);
+                    }
                 });
             }
         }
 
-        private ICommandResult CreateFromException(Exception ex, ICommand command)
+        private ICommandResult CreateFromException(Exception ex)
         {
             var exceptionResult = new CommandExceptionResult(ex.Message, ex);
 
@@ -486,6 +520,13 @@
             var commandHandlers = this.serviceProvider.GetServices<IMessageHandler<TMessage>>();
 
             return commandHandlers.ToArray();
+        }
+
+        private IValidator<TCommand>[] ResolveCommandValidators<TCommand>() where TCommand : ICommand
+        {
+            var commandValidators = this.serviceProvider.GetServices<IValidator<TCommand>>();
+
+            return commandValidators.ToArray();
         }
 
         private IQueryHandler<TQuery, TQueryResult> Resolve<TQuery, TQueryResult>()

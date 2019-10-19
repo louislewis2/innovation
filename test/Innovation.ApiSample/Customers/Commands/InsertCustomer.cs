@@ -35,6 +35,7 @@
         public bool? ExistsOnGithub { get; private set; }
 
         public object DispatcherContext { get; set; }
+        public string CorrelationId { get; set; }
 
         #endregion Properties
 

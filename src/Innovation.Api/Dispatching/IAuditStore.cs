@@ -9,8 +9,8 @@
 
     public interface IAuditStore
     {
-        Task Log(Guid correlationId, ICommand command, ICommandResult commandResult);
-        Task Log(Guid correlationId, IQuery query);
-        Task Log(Guid correlationId, IMessage message);
+        Task Log(string correlationId, ICommand command, ICommandResult commandResult);
+        Task Log(string correlationId, IQuery query);
+        Task Log(string correlationId, IMessage message);
     }
 }

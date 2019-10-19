@@ -3,22 +3,21 @@
     using System;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Mvc;
-    using Microsoft.Extensions.DependencyInjection;
 
-    using Innovation.Api.Dispatching;
+    using Innovation.Integration.AspNetCore;
 
     using Innovation.Sample.Api.Paging;
     using Innovation.Sample.Api.Customers.Queries;
     using Innovation.Sample.Api.Customers.Commands;
     using Innovation.Sample.Api.Customers.ViewModels;
 
-    public class CustomerController : Controller
+    public class CustomerController : InnovationBaseController
     {
         #region Methods
 
         public async Task<IActionResult> Index(QueryPage queryPage)
         {
-            return this.View(await this.GetDispatcher().Query<QueryPage, GenericResultsList<CustomerLite>>(queryPage));
+            return this.View(await this.Query<QueryPage, GenericResultsList<CustomerLite>>(queryPage));
         }
 
         // GET: People/Create
@@ -35,7 +34,7 @@
         {
             if (ModelState.IsValid)
             {
-                var commandResult = await this.GetDispatcher().Command(createCustomer);
+                var commandResult = await this.Command(createCustomer);
 
                 if (commandResult.Success)
                 {
@@ -106,7 +105,7 @@
 
             if (ModelState.IsValid)
             {
-                var commandResult = await this.GetDispatcher().Command(updateCustomerCommand);
+                var commandResult = await this.Command(updateCustomerCommand);
 
                 if (commandResult.Success)
                 {
@@ -146,7 +145,7 @@
         public async Task<IActionResult> DeleteConfirmed(Guid id)
         {
             var command = new DeleteCustomer(id: id);
-            var commandResult = await this.GetDispatcher().Command(command);
+            var commandResult = await this.Command(command);
 
             return RedirectToAction("Index");
         }
@@ -155,21 +154,16 @@
 
         #region Private Methods
 
-        private IDispatcher GetDispatcher()
-        {
-            return this.HttpContext.RequestServices.GetRequiredService<IDispatcher>();
-        }
-
         private async Task<CustomerLite> GetCustomerLite(Guid id)
         {
             var getCustomer = new GetCustomer(id: id);
-            return await this.GetDispatcher().Query<GetCustomer, CustomerLite>(getCustomer);
+            return await this.Query<GetCustomer, CustomerLite>(getCustomer);
         }
 
         private async Task<CustomerDetail> GetCustomerDetail(Guid id)
         {
             var getCustomer = new GetCustomer(id: id);
-            return await this.GetDispatcher().Query<GetCustomer, CustomerDetail>(getCustomer);
+            return await this.Query<GetCustomer, CustomerDetail>(getCustomer);
         }
 
         #endregion Private Methods

@@ -1,16 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.1.2" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Innovation.Api\Innovation.Api.csproj" />
+    <ProjectReference Include="..\..\src\Innovation.Integration.AspNetCore\Innovation.Integration.AspNetCore.csproj" />
     <ProjectReference Include="..\..\src\Innovation.ServiceBus.InProcess\Innovation.ServiceBus.InProcess.csproj" />
     <ProjectReference Include="..\Innovation.Sample.Api\Innovation.Sample.Api.csproj" />
     <ProjectReference Include="..\Innovation.Sample.Data\Innovation.Sample.Data.csproj" />

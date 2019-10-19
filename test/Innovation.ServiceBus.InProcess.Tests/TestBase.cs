@@ -13,17 +13,18 @@
         public TestBase()
         {
             var services = new ServiceCollection();
-            services.AddLogging();
+            services.AddLogging(config =>
+            {
+                config.AddDebug().SetMinimumLevel(LogLevel.Information);
+                config.AddConsole();
+            });
+
             services.AddOptions();
 
             services.AddInnovation();
             services.AddConsumer();
 
             this.ServiceProvider = services.BuildServiceProvider();
-
-            var loggerFactory = this.ServiceProvider.GetRequiredService<ILoggerFactory>();
-            loggerFactory.AddDebug(LogLevel.Debug);
-            loggerFactory.AddConsole(LogLevel.Debug);
         }
 
         #endregion Constructor

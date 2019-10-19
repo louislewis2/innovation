@@ -73,7 +73,12 @@
 
         private static void ConfigureServices(IServiceCollection services)
         {
-            services.AddLogging();
+            services.AddLogging(config =>
+            {
+                config.AddDebug().SetMinimumLevel(LogLevel.Information);
+                config.AddConsole();
+            });
+
             services.AddOptions();
 
             services.AddSampleModule();
@@ -86,10 +91,6 @@
             ConfigureServices(services);
 
             ServiceProvider = services.BuildServiceProvider();
-
-            var loggerFactory = ServiceProvider.GetService<ILoggerFactory>();
-            loggerFactory.AddDebug(LogLevel.Debug);
-            loggerFactory.AddConsole(LogLevel.Debug);
         }
 
         #endregion Private Methods

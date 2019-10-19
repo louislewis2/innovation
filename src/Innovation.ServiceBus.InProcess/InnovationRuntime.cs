@@ -20,6 +20,7 @@
     using Api.Messaging;
     using Api.Reactions;
     using Api.Commanding;
+    using Api.Validation;
     using Api.Interceptors;
     using Innovation.Api.Core;
     using System.Collections;
@@ -170,6 +171,7 @@
                     var isCommandReactor = type.AsType().IsGenericTypeOf(typeof(ICommandReactor<ICommand>));
                     var isCommandResultReactor = type.AsType().IsGenericTypeOf(typeof(ICommandResultReactor<ICommand>));
                     var isCommandInterceptor = type.AsType().IsGenericTypeOf(typeof(ICommandInterceptor<ICommand>));
+                    var isCommandValidator = type.AsType().IsGenericTypeOf(typeof(IValidator<ICommand>));
 
                     if (isCommandHandler)
                     {
@@ -187,6 +189,25 @@
                             }
 
                             this.services.TryAddTransient(commandHandlerInterface, type.AsType());
+                        }
+                    }
+
+                    if (isCommandValidator)
+                    {
+                        var commandValidatorInterfaces = type.ImplementedInterfaces.Where(x => x.IsGenericTypeOf(typeof(IValidator<ICommand>)));
+
+                        this.logger.LogDebug("{TypeName} Contains {Count} Command Validators's", type.Name, commandValidatorInterfaces.Count());
+
+                        foreach (var commandValidatorInterface in commandValidatorInterfaces)
+                        {
+                            var genericArguments = commandValidatorInterface.GetGenericArguments();
+
+                            if (genericArguments != null && genericArguments.Count() == 1)
+                            {
+                                this.logger.LogDebug("{TypeName} Validates {CommandName}", type.Name, genericArguments[0].Name);
+                            }
+
+                            this.services.TryAddTransient(commandValidatorInterface, type.AsType());
                         }
                     }
 

@@ -1,9 +1,10 @@
 ﻿namespace Innovation.Api.Dispatching
 {
-    using Commanding;
+    using System.Threading.Tasks;
+
     using Querying;
     using Messaging;
-    using System.Threading.Tasks;
+    using Commanding;
 
     /// <summary>
     /// This is the interface that a dispatcher must implement.
@@ -11,6 +12,7 @@
     /// </summary>
     public interface IDispatcher
     {
+        void SetCorrelationId(string correlationId);
         Task<ICommandResult> Command<TCommand>(TCommand command, bool suppressExceptions = true) where TCommand : ICommand;
         Task Message<TMessage>(TMessage message) where TMessage : IMessage;
         Task MessageFor<TMessage>(TMessage message, params string[] addresses) where TMessage : IMessage;

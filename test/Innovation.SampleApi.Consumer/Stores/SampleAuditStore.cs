@@ -1,6 +1,5 @@
 ﻿namespace Innovation.SampleApi.Consumer.Stores
 {
-    using System;
     using System.Threading.Tasks;
     using System.Collections.Generic;
 
@@ -14,7 +13,7 @@
     {
         #region Fields
 
-        private readonly Dictionary<Guid, List<IEvent>> eventStream;
+        private readonly Dictionary<string, List<IEvent>> eventStream;
 
         #endregion Fields
 
@@ -22,34 +21,34 @@
 
         public SampleAuditStore()
         {
-            this.eventStream = new Dictionary<Guid, List<IEvent>>();
+            this.eventStream = new Dictionary<string, List<IEvent>>();
         }
 
         #endregion Constructor
 
         #region Properties
 
-        public Dictionary<Guid, List<IEvent>> EventStream => this.eventStream;
+        public Dictionary<string, List<IEvent>> EventStream => this.eventStream;
 
         #endregion Properties
 
         #region Methods
 
-        public Task Log(Guid correlationId, ICommand command, ICommandResult commandResult)
+        public Task Log(string correlationId, ICommand command, ICommandResult commandResult)
         {
             this.InsertEvent(correlationId: correlationId, @event: command);
 
             return Task.FromResult(0);
         }
 
-        public Task Log(Guid correlationId, IQuery query)
+        public Task Log(string correlationId, IQuery query)
         {
             this.InsertEvent(correlationId: correlationId, @event: query);
 
             return Task.FromResult(0);
         }
 
-        public Task Log(Guid correlationId, IMessage message)
+        public Task Log(string correlationId, IMessage message)
         {
             this.InsertEvent(correlationId: correlationId, @event: message);
 
@@ -60,7 +59,7 @@
 
         #region Private Methods
 
-        private void InsertEvent(Guid correlationId, IEvent @event)
+        private void InsertEvent(string correlationId, IEvent @event)
         {
             if (this.eventStream.ContainsKey(key: correlationId))
             {

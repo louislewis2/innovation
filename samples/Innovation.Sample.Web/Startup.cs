@@ -37,6 +37,7 @@
             {
                 options.SetMinimumLevel(LogLevel.Debug);
                 options.AddDebug();
+                options.AddConsole();
             });
 
             services.AddOptions();
@@ -49,8 +50,6 @@
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
-            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
