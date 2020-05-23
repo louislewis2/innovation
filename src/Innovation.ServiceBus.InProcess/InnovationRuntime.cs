@@ -22,8 +22,6 @@
     using Api.Commanding;
     using Api.Validation;
     using Api.Interceptors;
-    using Innovation.Api.Core;
-    using System.Collections;
 
     public class InnovationRuntime
     {
@@ -66,17 +64,9 @@
         {
             var assemblyDictionary = new Dictionary<string, Assembly>();
 
-            // TODO: Workaround for known bug: https://github.com/dotnet/cli/issues/4037
-            // If this is removed, the test's will not pass, as the handlers are not detected
-            // which of course will prevent users of this library from testing as well
-#if (NETFULL)
-            var applicationDomainAssemblies = AppDomain.CurrentDomain.GetAssemblies().ToList();
-            applicationDomainAssemblies.ForEach(x => assemblyDictionary.TryAdd(x.GetName().Name, x));
-#endif
+            var discoveredAssemblies = this.LoadReferencingLibraries();
 
-            var discoveredLibraries = this.LoadReferencingLibraries();
-
-            foreach (var discoveredAssembly in discoveredLibraries)
+            foreach (var discoveredAssembly in discoveredAssemblies)
             {
                 var assemblyName = discoveredAssembly.GetName();
 
@@ -93,7 +83,7 @@
 
             var loadedAssemblies = this.LoadFromLocations();
 
-            if (loadedAssemblies != null && loadedAssemblies.Length > 0)
+            if (loadedAssemblies?.Length > 0)
             {
                 foreach (var loadedAssembly in loadedAssemblies)
                 {
@@ -139,15 +129,6 @@
                 }
                 catch (Exception ex)
                 {
-#if (NETFULL)
-                    try
-                    {
-                        var asm = Assembly.Load(AssemblyName.GetAssemblyName(assembly.Location));
-                        types = asm.DefinedTypes.ToArray();
-                    }
-                    catch (Exception)
-                    { }
-#endif
                     this.logger.LogError(ex.Message, ex);
                 }
 
@@ -294,15 +275,13 @@
                     if (Directory.Exists(searchLocation))
                     {
                         var files = Directory.GetFiles(searchLocation, "*.dll");
+
                         foreach (var file in files)
                         {
                             try
                             {
-#if !(NETFULL)
                                 var loadedAssembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(file);
-#else
-                                var loadedAssembly = Assembly.LoadFile(file);
-#endif
+
                                 loadedAssemblyList.Add(loadedAssembly);
                             }
                             catch (Exception ex)
@@ -328,20 +307,20 @@
         {
             try
             {
-                var assemblies = new List<Assembly>();
+                var assembliesReferencingInnovation = new List<Assembly>();
 
-                var dependencies = DependencyContext.Default.RuntimeLibraries;
+                var runtimeLibraries = DependencyContext.Default.RuntimeLibraries;
 
-                foreach (var library in dependencies)
+                foreach (var runtimeLibrary in runtimeLibraries)
                 {
-                    if (IsCandidateLibrary(library))
+                    if (IsCandidateLibrary(runtimeLibrary))
                     {
-                        var assembly = Assembly.Load(new AssemblyName(library.Name));
-                        assemblies.Add(assembly);
+                        var assembly = Assembly.Load(new AssemblyName(runtimeLibrary.Name));
+                        assembliesReferencingInnovation.Add(assembly);
                     }
                 }
 
-                return assemblies;
+                return assembliesReferencingInnovation;
             }
             catch (Exception)
             {
@@ -349,9 +328,9 @@
             }
         }
 
-        private bool IsCandidateLibrary(RuntimeLibrary library)
+        private bool IsCandidateLibrary(RuntimeLibrary runtimeLibrary)
         {
-            return ReferenceAssemblies.Contains(library.Name) || library.Dependencies.Any(x => ReferenceAssemblies.Any(y => y.StartsWith(x.Name)));
+            return ReferenceAssemblies.Contains(runtimeLibrary.Name) || runtimeLibrary.Dependencies.Any(x => ReferenceAssemblies.Any(y => y.StartsWith(x.Name)));
         }
 
         #endregion Private Methods

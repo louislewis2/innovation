@@ -6,8 +6,10 @@
     using Xunit;
     using Innovation.Api.CommandHelpers;
 
-    using Innovation.ApiSample.Vendors.Commands;
-    using Innovation.ApiSample.Customers.Commands;
+    using ApiSample.Vendors.Criteria;
+    using ApiSample.Vendors.Commands;
+    using ApiSample.Customers.Criteria;
+    using ApiSample.Customers.Commands;
 
     public class CommandTests : TestBase
     {
@@ -15,7 +17,10 @@
         public void Can_Handle_Insert_Customer()
         {
             // Arrange
-            var insertCustomerCommand = new InsertCustomer(name: "Innovation", userName: "somecrazynamethatdoesnotexistyet");
+            var insertCustomerCriteria = new CustomerCriteria(
+                name: "Innovation",
+                userName: "somecrazynamethatdoesnotexistyet");
+            var insertCustomerCommand = new InsertCustomer(customerCriteria: insertCustomerCriteria);
 
             // Act
             var dispatcher = this.GetDispatcher();
@@ -29,7 +34,10 @@
         public async Task Can_Insert_Customer()
         {
             // Arrange
-            var insertCustomerCommand = new InsertCustomer(name: "Innovation", userName: "somecrazynamethatdoesnotexistyet");
+            var insertCustomerCriteria = new CustomerCriteria(
+                name: "Innovation",
+                userName: "somecrazynamethatdoesnotexistyet");
+            var insertCustomerCommand = new InsertCustomer(customerCriteria: insertCustomerCriteria);
 
             // Act
             var dispatcher = this.GetDispatcher();
@@ -43,16 +51,19 @@
         public async Task Can_Insert_Vendor()
         {
             // Arrange
-            var insertVendorCommand = new InsertVendor(name: "Innovation", userName: "SomeUserNameThatRocks");
+            var vendorCriteria = new VendorCriteria(
+                name: "Innovation",
+                userName: "SomeUserNameThatRocks",
+                address: null);
+            var insertVendorCommand = new InsertVendor(vendorCriteria: vendorCriteria);
 
             // Act
             var dispatcher = this.GetDispatcher();
             var insertVendorCommandResult = await dispatcher.Command(command: insertVendorCommand, suppressExceptions: false);
 
             // Assert
-            Assert.False(condition: insertVendorCommandResult.Success);
+            Assert.True(condition: insertVendorCommandResult.Success);
             Assert.IsType<CommandResult>(@object: insertVendorCommandResult);
-            Assert.Equal(expected: "Test Error Message", actual: ((CommandResult)insertVendorCommandResult).Errors.First());
         }
     }
 }

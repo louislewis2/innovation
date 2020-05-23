@@ -2,9 +2,10 @@
 {
     using System.Threading.Tasks;
 
-    using Api.Commanding;
-    using Api.CommandHelpers;
-    using Innovation.ApiSample.Customers.Commands;
+    using Innovation.Api.Commanding;
+    using Innovation.Api.CommandHelpers;
+
+    using ApiSample.Customers.Commands;
 
     public class CustomerPersistor : ICommandHandler<InsertCustomer>
     {

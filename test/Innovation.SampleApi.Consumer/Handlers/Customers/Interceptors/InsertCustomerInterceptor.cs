@@ -5,16 +5,15 @@
     using Microsoft.Extensions.Logging;
 
     using Octokit;
-
     using Innovation.Api.Interceptors;
-    using Innovation.ApiSample.Customers.Commands;
+
+    using ApiSample.Customers.Commands;
 
     public class InsertCustomerInterceptor : ICommandInterceptor<InsertCustomer>
     {
         #region Fields
 
         private readonly ILogger logger;
-        private const string baseUri = "https://api.github.com/";
 
         #endregion Fields
 
@@ -43,17 +42,17 @@
             try
             {
                 var github = new GitHubClient(new ProductHeaderValue("Innovation"));
-                var user = await github.User.Get(command.UserName);
+                var user = await github.User.Get(command.Criteria.UserName);
 
                 var exists = user != null;
 
-                command.SetGithubStatus(existsOnGithub: exists);
+                command.Criteria.SetGithubStatus(existsOnGithub: exists);
             }
             catch (Exception ex)
             {
                 this.logger.LogError(ex.Message, ex);
 
-                command.SetGithubStatus(existsOnGithub: false);
+                command.Criteria.SetGithubStatus(existsOnGithub: false);
             }
         }
 

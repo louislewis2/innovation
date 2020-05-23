@@ -1,5 +1,6 @@
 ﻿namespace Innovation.SampleApi.Consumer.Handlers.Vendors.Commands
 {
+    using System;
     using System.Threading.Tasks;
     using Microsoft.Extensions.Logging;
 
@@ -21,7 +22,7 @@
 
         public override Task<ICommandResult> Persist()
         {
-            return Task.FromResult(this.ReturnError(errorMessage: "Test Error Message"));
+            return Task.FromResult(this.ReturnSuccess(recordId: Guid.NewGuid()));
         }
 
         #endregion Methods
