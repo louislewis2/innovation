@@ -34,23 +34,23 @@
 
         #region Methods
 
-        public Task Log(string correlationId, ICommand command, ICommandResult commandResult)
+        public Task Log(AuditContext auditContext, ICommand command, ICommandResult commandResult)
         {
-            this.InsertEvent(correlationId: correlationId, @event: command);
+            this.InsertEvent(auditContext: auditContext, @event: command);
 
             return Task.FromResult(0);
         }
 
-        public Task Log(string correlationId, IQuery query)
+        public Task Log(AuditContext auditContext, IQuery query)
         {
-            this.InsertEvent(correlationId: correlationId, @event: query);
+            this.InsertEvent(auditContext: auditContext, @event: query);
 
             return Task.FromResult(0);
         }
 
-        public Task Log(string correlationId, IMessage message)
+        public Task Log(AuditContext auditContext, IMessage message)
         {
-            this.InsertEvent(correlationId: correlationId, @event: message);
+            this.InsertEvent(auditContext: auditContext, @event: message);
 
             return Task.FromResult(0);
         }
@@ -59,16 +59,16 @@
 
         #region Private Methods
 
-        private void InsertEvent(string correlationId, IEvent @event)
+        private void InsertEvent(AuditContext auditContext, IEvent @event)
         {
-            if (this.eventStream.ContainsKey(key: correlationId))
+            if (this.eventStream.ContainsKey(key: auditContext.CorrelationId))
             {
-                var existingEntry = this.eventStream[key: correlationId];
+                var existingEntry = this.eventStream[key: auditContext .CorrelationId];
                 existingEntry.Add(item: @event);
             }
             else
             {
-                this.eventStream.Add(key: correlationId, value: new List<IEvent> { @event });
+                this.eventStream.Add(key: auditContext.CorrelationId, value: new List<IEvent> { @event });
             }
         }
 

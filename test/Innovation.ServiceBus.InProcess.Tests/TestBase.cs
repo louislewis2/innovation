@@ -22,6 +22,7 @@
             services.AddOptions();
 
             services.AddInnovation();
+
             services.AddConsumer();
 
             this.ServiceProvider = services.BuildServiceProvider();

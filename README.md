@@ -1,14 +1,52 @@
 # Innovation
 
-## CQRS 
+## CQRS
 
 A simple framework which aims to provide the ability to use a CQRS pattern in your code base,
-currently with immediate consistency. It does not yet implement or support Event Sourcing.
+currently with immediate consistency. It does not yet implement or try support Event Sourcing.
 
 Version 1.X, Will Be The Last To Support Dot Net Core 2.X.
 The Next Version Will Support Dot Net Core 3.x
 
+## TODO's
+
+
+## Dispatcher Command Pipeline
+
+Commands: Dispatcher -> Command Reactors -> Command Interceptors -> Command Validators -> Command Handler -> Command Result Reactors -> Audit Store -> Return Result
+
 ## Framework Components
+
+### Command Reactors
+
+Command Reactors Are The First Step In The Command Dispatching Pipeline.
+They Can Be Used As Example For Logging Or To Prime Other Services About An Impending Command.
+
+While The Command Is Passed In By Reference, It Is Not Advised To Edit The Object.
+The Command Reactor Has No Influence Over Pipeline Execution
+
+These Are Run In Parallel In A Background Thread
+
+### Command Interceptors
+
+This Is The Second Step In The Command Dispatching Pipeline.
+These Can, Where Required Make Changes To A Command Or Its Properties. They Are Called One After The Other,
+Not In Parallel.
+
+### Command Validators
+
+To Allow Better Seperation Of Concerns This Is The Third Step In The Command Dispatch Pipeline. 
+Command Validators Can Be Implemented For A Given Command. It Can Validate As Required, If Validation Fails The Command Handler
+Will Not Be Called, Instead The Result Of The Validation Will Be Returned.
+
+While There Can Be Multiple Implementations, The Pipeline Will Return After The First Implementation Returns An Error
+
+### Command Result Reactors
+
+Command Result Reactors Are The Final Step In The Command Dispatching Pipeline.
+The Can Be Used As Example For Logging Or Auditing. The Command Result Reactor Has No Influence Over Pipeline Execution
+
+These Are Run In Parallel In A Background Thread
 
 ### Commands
 
@@ -31,34 +69,12 @@ These Objects Must Implement The IQueryResult Interface.
 This Interface Is Soley For Tracking Within The Framework And Does Not Impose Any
 Field Or Property Requirements.
 
-### Command Reactors
-
-Command Reactors Are The First Step In The Command Dispatching Pipeline.
-They Can Be Used As Example For Logging Or To Prime Other Services About An Impending Command
-
-### Command Interceptors
-
-Interceptors Are Called Before The Command Handler Is Called, This Is The Second Step In The 
-Command Dispatching Pipeline.
-These Can, Where Required Make Changes To A Command Or Its Properties.
-
-### Command Validators
-
-To Allow Seperation Of Concerns. Command Validators Can Be Implemented
-For A Given Command. It Can Validate As Required, If Validation Fails The Command Handler
-Will Not Be Called, Instead The Result Of The Validation Will Be Returned
-
 ### Command Validation
 
 If Commands Do Not Have Implementations Of Command Handlers Registered, They Will Be Checked
 Firstly By The Microsoft Validator (System.ComponentModel.DataAnnotations.Validator), They Will 
 Also Be Checked If They Implement IValidatableObject (System.ComponentModel.DataAnnotations.IValidatableObject).
 If Validation Fails The Command Handler Will Not Be Called, Instead The Result Of The Validation Will Be Returned.
-
-### Command Result Reactors
-
-Command Result Reactors Are The Final Step In The Command Dispatching Pipeline.
-The Can Be Used As Example For Logging Or Auditing
 
 ### Audit Store
 
@@ -75,15 +91,18 @@ Messages Can Be Used To Broadcast To Multiple Handlers
 The Dispatcher Supports Either Creating Its Own Or Being Supplied With A Correlation Id.
 An Implementation Of This Is Available For Asp.Net Core, Using The Well Known `X-Correlation-ID` Header
 
+### SearchLocations
+
+The Innovation Loader Is Capable Of Loading Assemblies From Specified Locations.
+This Is To Support A Modular Approach.
+
+## Dispatcher Context
+
+
 
 ## Supported .Net Frameworks
 
-1. .Net 4.5.2
-2. .Net 4.6
-3. .Net 4.6.1
-4. .Net 4.6.2
-5. .Net Standard 1.6
-6. .Net Standard 2.0
+1. .Net Standard 2.0
 
 ## Samples
 

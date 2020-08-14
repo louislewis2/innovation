@@ -4,15 +4,15 @@
     <Description>Contains types and interfaces that are used to interact with the dispatcher and runtime</Description>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <Authors>Louis Lewis</Authors>
-    <Version>2.0.5-beta1</Version>
+    <Version>3.0.0-beta1</Version>
     <PackageTags>Innovation; CQRS</PackageTags>
     <Company>e3P</Company>
     <PackageProjectUrl>https://github.com/louislewis2/innovation</PackageProjectUrl>
-    <PackageReleaseNotes>Add Command Validator And Correlation Id Support</PackageReleaseNotes>
+    <PackageReleaseNotes>Initial .NET Core 3 Implementation</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.ComponentModel.Annotations" Version="4.6.0" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="4.7.0" />
   </ItemGroup>
 
 </Project>

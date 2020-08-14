@@ -2,7 +2,6 @@
 {
     public interface IDispatcherContext
     {
-        object DispatcherContext { get; set; }
-        string CorrelationId { get; set; }
+        void SetCorrelationId(string correlationId);
     }
 }

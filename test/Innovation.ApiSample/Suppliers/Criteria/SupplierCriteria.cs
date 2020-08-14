@@ -1,9 +1,19 @@
 ﻿namespace Innovation.ApiSample.Suppliers.Criteria
 {
+    using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations;
 
-    public class SupplierCriteria
+    public class SupplierCriteria : IValidatableObject
     {
+        #region Constructor
+
+        public SupplierCriteria(string name)
+        {
+            this.Name = name;
+        }
+
+        #endregion Constructor
+
         #region Properties
 
         [Required]
@@ -12,5 +22,24 @@
         public string Name { get; set; }
 
         #endregion Properties
+
+        #region Methods
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            var validationResults = new List<ValidationResult>();
+
+            if (!string.IsNullOrWhiteSpace(value: this.Name))
+            {
+                if (this.Name == "Louis")
+                {
+                    validationResults.Add(new ValidationResult("Name Cannot Be Louis"));
+                }
+            }
+
+            return validationResults;
+        }
+
+        #endregion Methods
     }
 }

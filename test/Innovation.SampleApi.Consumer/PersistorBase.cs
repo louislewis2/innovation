@@ -55,6 +55,13 @@
             return this.commandResult;
         }
 
+        public ICommandResult ReturnSuccess(Guid recordId)
+        {
+            this.commandResult.SetRecord(recordId: recordId);
+
+            return this.commandResult;
+        }
+
         public abstract Task<ICommandResult> Persist();
 
         #endregion Methods

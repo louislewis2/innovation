@@ -8,9 +8,9 @@
     {
         #region Constructor
 
-        public InsertSupplier(SupplierCriteria criteria)
+        public InsertSupplier(SupplierCriteria supplierCriteria)
         {
-            this.Criteria = criteria;
+            this.Criteria = supplierCriteria;
         }
 
         #endregion Constructor

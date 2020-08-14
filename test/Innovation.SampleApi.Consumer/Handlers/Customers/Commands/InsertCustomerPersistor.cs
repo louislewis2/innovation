@@ -2,11 +2,12 @@
 {
     using System.Threading.Tasks;
 
-    using Api.Commanding;
-    using Api.CommandHelpers;
-    using Innovation.ApiSample.Customers.Commands;
+    using Innovation.Api.Commanding;
+    using Innovation.Api.CommandHelpers;
 
-    public class CustomerPersistor : ICommandHandler<InsertCustomer>
+    using ApiSample.Customers.Commands;
+
+    public class InsertCustomerPersistor : ICommandHandler<InsertCustomer>
     {
         #region Methods
 

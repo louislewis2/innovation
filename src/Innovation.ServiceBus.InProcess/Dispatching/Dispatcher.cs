@@ -9,6 +9,7 @@
     using Microsoft.Extensions.DependencyInjection;
 
     using Exceptions;
+    using Validators;
     using Api.Querying;
     using Api.Reactions;
     using Api.Messaging;
@@ -17,6 +18,7 @@
     using Api.Dispatching;
     using Api.Interceptors;
     using Api.CommandHelpers;
+    using System.Diagnostics;
 
     /// <summary>
     /// This is the implementation of the dispatcher for the in process service bus.
@@ -27,6 +29,7 @@
 
         private readonly ILogger logger;
         private readonly IServiceProvider serviceProvider;
+        private readonly IServiceScopeFactory serviceScopeFactory;
 
         #endregion Fields
 
@@ -34,17 +37,19 @@
 
         public Dispatcher(
             ILogger<Dispatcher> logger,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            IServiceScopeFactory serviceScopeFactory)
         {
             this.logger = logger;
             this.serviceProvider = serviceProvider;
+            this.serviceScopeFactory = serviceScopeFactory;
         }
 
         #endregion Constructor
 
         #region Properties
 
-        public object Context { get; set; }
+        public IDispatcherContext Context { get; private set; }
         public string CorrelationId { get; private set; } = Guid.NewGuid().ToString();
 
         #endregion Properties
@@ -56,13 +61,19 @@
             this.CorrelationId = correlationId;
         }
 
+        public void SetContext(IDispatcherContext dispatcherContext)
+        {
+            this.Context = dispatcherContext ?? throw new ArgumentNullException(paramName: nameof(dispatcherContext));
+            this.Context.SetCorrelationId(correlationId: this.CorrelationId);
+        }
+
         public bool CanCommand<TCommand>(TCommand command) where TCommand : ICommand
         {
             try
             {
                 var commandHandler = this.Resolve<TCommand>();
 
-                return commandHandler == null ? false : true;
+                return commandHandler != null;
             }
             catch (Exception ex)
             {
@@ -87,6 +98,7 @@
             catch (Exception ex)
             {
                 this.logger.LogError(ex.Message, ex);
+
                 return false;
             }
         }
@@ -109,6 +121,7 @@
             catch (Exception ex)
             {
                 this.logger.LogError(ex.Message, ex);
+
                 return false;
             }
         }
@@ -119,11 +132,12 @@
             {
                 var queryHandler = this.Resolve<TQuery, TQueryResult>();
 
-                return queryHandler == null ? false : true;
+                return queryHandler != null;
             }
             catch (Exception ex)
             {
                 this.logger.LogError(ex.Message, ex);
+
                 return false;
             }
         }
@@ -146,18 +160,33 @@
             catch (Exception ex)
             {
                 this.logger.LogError(ex.Message, ex);
+
                 return false;
             }
         }
 
         public async Task<ICommandResult> Command<TCommand>(TCommand command, bool suppressExceptions = true) where TCommand : ICommand
         {
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
             try
             {
-                if (command is IDispatcherContext dispatcherContext)
+                if (command == null)
                 {
-                    dispatcherContext.DispatcherContext = this.Context;
-                    dispatcherContext.CorrelationId = this.CorrelationId;
+                    throw new ArgumentNullException(paramName: nameof(command));
+                }
+
+                if (command is IContextAware contextAwareCommand)
+                {
+                    if (this.Context == null)
+                    {
+                        this.logger.LogWarning(1, "Command {CommandName} Is Context Aware, Context Was Not Set.{correlationId} - {CommandType}", command.EventName, this.CorrelationId, command.GetType());
+                    }
+                    else
+                    {
+                        contextAwareCommand.SetContext(dispatcherContext: this.Context);
+                    }
                 }
 
                 var auditStore = this.serviceProvider.GetService<IAuditStore>();
@@ -202,10 +231,11 @@
                     this.logger.LogDebug(1, "Found {CommandReactorCount} Command Reactors", commandReactors.Length);
                 }
 
-                await Task.Run(async () =>
+                _ = Task.Run(() =>
                 {
                     this.logger.LogDebug(1, "Notifying Command Reactors");
-                    await this.NotifyCommandReactors(commandReactors, command);
+
+                    this.NotifyCommandReactors(commandReactors, command);
                 });
 
                 if (commandInterceptors != null)
@@ -229,48 +259,35 @@
                     }
                 }
 
+                var validationResults = new List<ValidationResult>();
+                var dataAnnotationsValidator = new DataAnnotationsValidator(serviceProvider: this.serviceProvider);
+
+                var validationPassed = dataAnnotationsValidator.TryValidateObjectRecursive(obj: command, validationResults);
+
+                this.logger.LogDebug(1, "Command {CommandName} Initial Validation Result: {Status}", command.EventName, validationPassed);
+
+                if (!validationPassed && validationResults.Count > 0)
+                {
+                    result = new CommandResult();
+                    result.As<CommandResult>().Fail(validationResults);
+                }
+
                 IValidationResult validationResult = null;
 
-                if(commandValidators != null && commandValidators?.Length > 0)
+                if (validationPassed)
                 {
-                    foreach(var commandValidator in commandValidators)
+                    if (commandValidators != null && commandValidators?.Length > 0)
                     {
-                        validationResult = await commandValidator.Validate(command);
-
-                        if (!validationResult.Success)
+                        foreach (var commandValidator in commandValidators)
                         {
-                            break;
-                        }
-                    }
-                }
-                else // If There Are No Explicit Validators, Try Validate Using Default Validator
-                {
-                    var validationResults = new List<ValidationResult>();
-                    var validationContext = new ValidationContext(command, this.serviceProvider, null);
-                    var validationPassed = Validator.TryValidateObject(command, validationContext, validationResults, true);
+                            var intermediateValidationResult = await commandValidator.Validate(command);
 
-                    this.logger.LogDebug(1, "Command {CommandName} Initial Validation Result: {Status}", command.EventName, validationPassed);
-
-                    if (!validationPassed && validationResults.Count > 0)
-                    {
-                        result = new CommandResult();
-                        result.As<CommandResult>().Fail(validationResults);
-                    }
-
-                    if (command is IValidatableObject)
-                    {
-                        this.logger.LogDebug(1, "Command {CommandName} Requires Self Validation", command.EventName);
-
-                        var selfValidationResults = ((IValidatableObject)command).Validate(validationContext);
-
-                        if (selfValidationResults != null && selfValidationResults.Count() > 0)
-                        {
-                            if (result == null)
+                            if (!intermediateValidationResult.Success)
                             {
-                                result = new CommandResult();
-                            }
+                                validationResult = intermediateValidationResult;
 
-                            result.As<CommandResult>().Fail(selfValidationResults);
+                                break;
+                            }
                         }
                     }
                 }
@@ -278,13 +295,21 @@
                 var finalResult = validationResult ?? (result == null ? await commandHandler.Handle(command) : result.Success ? await commandHandler.Handle(command) : result);
 
                 this.logger.LogDebug(1, "Notifying Command Result Reactors");
-                await this.NotifyCommandResultReactors(commandResultReactors, command, finalResult);
+
+                _ = Task.Run(() =>
+                {
+                    this.logger.LogDebug(1, "Notifying Command Reactors");
+
+                    this.NotifyCommandResultReactors(commandResultReactors, command, finalResult);
+                });
 
                 this.logger.LogDebug(1, "Returning From Dispatcher {FinalResult}", finalResult);
 
+                stopWatch.Stop();
+
                 if (auditStore != null)
                 {
-                    await auditStore.Log(correlationId: this.CorrelationId, command: command, commandResult: finalResult);
+                    await auditStore.Log(auditContext: new AuditContext(correlationId: this.CorrelationId, runtimeMilliSeconds: stopWatch.ElapsedMilliseconds), command: command, commandResult: finalResult);
                 }
 
                 return finalResult;
@@ -292,6 +317,7 @@
             catch (Exception ex)
             {
                 this.logger.LogError(ex.Message, ex);
+
                 if (suppressExceptions)
                 {
                     return this.CreateFromException(ex);
@@ -305,6 +331,9 @@
 
         public async Task Message<TMessage>(TMessage message) where TMessage : IMessage
         {
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
             this.logger.LogDebug(2, "Entered Message Dispatcher. {correlationId}", this.CorrelationId);
 
             var auditStore = this.serviceProvider.GetService<IAuditStore>();
@@ -318,7 +347,7 @@
 
             if (auditStore != null)
             {
-                await auditStore.Log(correlationId: this.CorrelationId, message: message);
+                await auditStore.Log(auditContext: new AuditContext(correlationId: this.CorrelationId, runtimeMilliSeconds: stopWatch.ElapsedMilliseconds), message: message);
             }
 
             foreach (var handler in handlers)
@@ -329,6 +358,9 @@
 
         public async Task MessageFor<TMessage>(TMessage message, params string[] addresses) where TMessage : IMessage
         {
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
             this.logger.LogDebug(2, "Entered MessageFor Dispatcher. {correlationId}", this.CorrelationId);
 
             var auditStore = this.serviceProvider.GetService<IAuditStore>();
@@ -350,7 +382,7 @@
 
             if (auditStore != null)
             {
-                await auditStore.Log(correlationId: this.CorrelationId, message: message);
+                await auditStore.Log(auditContext: new AuditContext(correlationId: this.CorrelationId, runtimeMilliSeconds: stopWatch.ElapsedMilliseconds), message: message);
             }
 
             foreach (var handler in addressableHandlers)
@@ -361,6 +393,9 @@
 
         public async Task<TQueryResult> Query<TQuery, TQueryResult>(TQuery query) where TQuery : IQuery where TQueryResult : IQueryResult
         {
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
             try
             {
                 var auditStore = this.serviceProvider.GetService<IAuditStore>();
@@ -386,7 +421,7 @@
 
                 if (auditStore != null)
                 {
-                    await auditStore.Log(correlationId: this.CorrelationId, query: query);
+                    await auditStore.Log(auditContext: new AuditContext(correlationId: this.CorrelationId, runtimeMilliSeconds: stopWatch.ElapsedMilliseconds), query: query);
                 }
 
                 return await queryHandler.Handle(query);
@@ -394,12 +429,16 @@
             catch (Exception ex)
             {
                 this.logger.LogError(ex.Message, ex);
+
                 throw;
             }
         }
 
         public async Task<TQueryResult> QueryFor<TQuery, TQueryResult>(TQuery query, params string[] addresses) where TQuery : IQuery where TQueryResult : IQueryResult
         {
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
             try
             {
                 this.logger.LogDebug(3, "Entered Query Dispatcher. {correlationId}", this.CorrelationId);
@@ -429,7 +468,7 @@
 
                 if (auditStore != null)
                 {
-                    await auditStore.Log(correlationId: this.CorrelationId, query: query);
+                    await auditStore.Log(auditContext: new AuditContext(correlationId: this.CorrelationId, runtimeMilliSeconds: stopWatch.ElapsedMilliseconds), query: query);
                 }
 
                 return await queryHandler.Handle(query);
@@ -437,6 +476,7 @@
             catch (Exception ex)
             {
                 this.logger.LogError(ex.Message, ex);
+
                 throw;
             }
         }
@@ -445,34 +485,43 @@
 
         #region Private Methods
 
-        private async Task NotifyCommandReactors<TCommand>(ICommandReactor<TCommand>[] commandReactors, TCommand command) where TCommand : ICommand
+        private void NotifyCommandReactors<TCommand>(ICommandReactor<TCommand>[] commandReactors, TCommand command) where TCommand : ICommand
         {
             this.logger.LogDebug(4, "Entered NotifyCommandReactors. {correlationId}", this.CorrelationId);
 
             foreach (var reactor in commandReactors)
             {
-                await Task.Run(() =>
+                _ = Task.Run(async () =>
                 {
-                    reactor.React(command);
+                    try
+                    {
+                        await reactor.React(command);
+                    }
+                    catch (Exception ex)
+                    {
+                        this.logger.LogDebug($"The Command Reactor: {reactor.GetType()} Raised An Exception");
+                        this.logger.LogError(ex.Message, ex);
+                    }
                 });
             }
         }
 
-        private async Task NotifyCommandResultReactors<TCommand, TCommandResult>(ICommandResultReactor<TCommand>[] commandResultReactors, TCommand command, TCommandResult commandResult)
+        private void NotifyCommandResultReactors<TCommand, TCommandResult>(ICommandResultReactor<TCommand>[] commandResultReactors, TCommand command, TCommandResult commandResult)
             where TCommand : ICommand
             where TCommandResult : ICommandResult
         {
             this.logger.LogDebug(5, "Entered NotifyCommandResultReactors. {correlationId}", this.CorrelationId);
 
+
             foreach (var reactor in commandResultReactors)
             {
-                await Task.Run(async () =>
+                _ = Task.Run(async () =>
                 {
                     try
                     {
                         await reactor.React(commandResult, command);
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         this.logger.LogError(5, "Error Occurred NotifyCommandResultReactors. {correlationId}", this.CorrelationId, ex);
                     }
@@ -496,7 +545,8 @@
 
         private ICommandReactor<TCommand>[] ResolveCommandReactors<TCommand>() where TCommand : ICommand
         {
-            var commandReactors = this.serviceProvider.GetServices<ICommandReactor<TCommand>>();
+            var scope = this.serviceScopeFactory.CreateScope();
+            var commandReactors = scope.ServiceProvider.GetServices<ICommandReactor<TCommand>>();
 
             return commandReactors.ToArray();
         }
@@ -510,7 +560,8 @@
 
         private ICommandResultReactor<TCommand>[] ResolveCommandResultReactors<TCommand>() where TCommand : ICommand
         {
-            var commandResultReactors = this.serviceProvider.GetServices<ICommandResultReactor<TCommand>>();
+            var scope = this.serviceScopeFactory.CreateScope();
+            var commandResultReactors = scope.ServiceProvider.GetServices<ICommandResultReactor<TCommand>>();
 
             return commandResultReactors.ToArray();
         }

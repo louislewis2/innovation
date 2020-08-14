@@ -11,7 +11,7 @@
         #region Properties
 
         /// <summary>
-        /// The header field name where the correlation ID will be stored
+        /// The header field name where the correlation ID will be retrieved from
         /// </summary>
         public string Header { get; set; } = DefaultHeader;
 
