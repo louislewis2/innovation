@@ -1,16 +1,19 @@
 # Innovation
 
-## CQRS 
+## CQRS
 
 A simple framework which aims to provide the ability to use a CQRS pattern in your code base,
-currently with immediate consistency. It does not yet implement or support Event Sourcing.
+currently with immediate consistency. It does not yet implement or try support Event Sourcing.
 
 Version 1.X, Will Be The Last To Support Dot Net Core 2.X.
 The Next Version Will Support Dot Net Core 3.x
 
+## TODO's
+
+
 ## Dispatcher Command Pipeline
 
-Commands: Dispatcher -> Command Reactors -> Command Interceptors -> Command Validators -> Command Handler -> Command Result Reactors -> Audit Store
+Commands: Dispatcher -> Command Reactors -> Command Interceptors -> Command Validators -> Command Handler -> Command Result Reactors -> Audit Store -> Return Result
 
 ## Framework Components
 
@@ -21,6 +24,8 @@ They Can Be Used As Example For Logging Or To Prime Other Services About An Impe
 
 While The Command Is Passed In By Reference, It Is Not Advised To Edit The Object.
 The Command Reactor Has No Influence Over Pipeline Execution
+
+These Are Run In Parallel In A Background Thread
 
 ### Command Interceptors
 
@@ -39,7 +44,9 @@ While There Can Be Multiple Implementations, The Pipeline Will Return After The 
 ### Command Result Reactors
 
 Command Result Reactors Are The Final Step In The Command Dispatching Pipeline.
-The Can Be Used As Example For Logging Or Auditing
+The Can Be Used As Example For Logging Or Auditing. The Command Result Reactor Has No Influence Over Pipeline Execution
+
+These Are Run In Parallel In A Background Thread
 
 ### Commands
 
@@ -86,7 +93,12 @@ An Implementation Of This Is Available For Asp.Net Core, Using The Well Known `X
 
 ### SearchLocations
 
-Add Details Here
+The Innovation Loader Is Capable Of Loading Assemblies From Specified Locations.
+This Is To Support A Modular Approach.
+
+## Dispatcher Context
+
+
 
 ## Supported .Net Frameworks
 

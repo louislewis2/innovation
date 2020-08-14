@@ -1,6 +1,5 @@
 ﻿namespace Innovation.Api.Dispatching
 {
-    using System;
     using System.Threading.Tasks;
 
     using Innovation.Api.Querying;
@@ -9,8 +8,8 @@
 
     public interface IAuditStore
     {
-        Task Log(string correlationId, ICommand command, ICommandResult commandResult);
-        Task Log(string correlationId, IQuery query);
-        Task Log(string correlationId, IMessage message);
+        Task Log(AuditContext auditContext, ICommand command, ICommandResult commandResult);
+        Task Log(AuditContext auditContext, IQuery query);
+        Task Log(AuditContext auditContext, IMessage message);
     }
 }

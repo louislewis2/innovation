@@ -1,6 +1,7 @@
 ﻿namespace Innovation.Sample.Data.Handlers.Customers.Reactors
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +38,9 @@
         {
             try
             {
+                // Simulate A Long Running Task
+                Thread.Sleep(5000);
+
                 using (var scope = this.serviceProvider.CreateScope())
                 {
                     var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
@@ -47,6 +51,7 @@
                     var insertLogEntryCommandResult = await dispatcher.Command(command: insertLogEntryCommand);
 
                     Console.WriteLine(message);
+                    this.logger.LogInformation(message: message);
                 }
             }
             catch (Exception ex)

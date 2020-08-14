@@ -7,7 +7,7 @@
 
     using ApiSample.Customers.Commands;
 
-    public class CustomerPersistor : ICommandHandler<InsertCustomer>
+    public class InsertCustomerPersistor : ICommandHandler<InsertCustomer>
     {
         #region Methods
 

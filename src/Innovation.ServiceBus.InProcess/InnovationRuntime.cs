@@ -11,9 +11,7 @@
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.DependencyInjection.Extensions;
 
-#if !(NETFULL)
     using System.Runtime.Loader;
-#endif
 
     using Settings;
     using Api.Querying;
