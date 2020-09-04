@@ -4,11 +4,10 @@
     <Description>Contains types and interfaces that are used to interact with the dispatcher and runtime</Description>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <Authors>Louis Lewis</Authors>
-    <Version>3.0.0-beta1</Version>
+    <Version>3.0.0-beta2</Version>
     <PackageTags>Innovation; CQRS</PackageTags>
-    <Company>e3P</Company>
     <PackageProjectUrl>https://github.com/louislewis2/innovation</PackageProjectUrl>
-    <PackageReleaseNotes>Initial .NET Core 3 Implementation</PackageReleaseNotes>
+    <PackageReleaseNotes>Add Support For CorrelationId</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

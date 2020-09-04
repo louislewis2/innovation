@@ -3,6 +3,7 @@
     using System;
     using System.ComponentModel.DataAnnotations;
 
+    using Innovation.Api.Core;
     using Innovation.Api.Commanding;
     using Innovation.Api.Dispatching;
 

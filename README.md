@@ -91,6 +91,9 @@ Messages Can Be Used To Broadcast To Multiple Handlers
 The Dispatcher Supports Either Creating Its Own Or Being Supplied With A Correlation Id.
 An Implementation Of This Is Available For Asp.Net Core, Using The Well Known `X-Correlation-ID` Header
 
+Command And Query Handlers Can Now Implement The ICorrelationAware Interface.
+When The Dispatcher Sees That They Implement This Interface, It Will Set The CorrelationId Before Calling The Handle Method.
+
 ### SearchLocations
 
 The Innovation Loader Is Capable Of Loading Assemblies From Specified Locations.

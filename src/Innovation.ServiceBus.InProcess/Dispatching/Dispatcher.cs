@@ -8,6 +8,7 @@
     using System.ComponentModel.DataAnnotations;
     using Microsoft.Extensions.DependencyInjection;
 
+    using Api.Core;
     using Exceptions;
     using Validators;
     using Api.Querying;
@@ -216,6 +217,11 @@
 
                 this.logger.LogDebug(1, "Found Handler - {HandlerType}", commandHandler.GetType());
 
+                if (commandHandler is ICorrelationAware correlationAwareCommand)
+                {
+                    correlationAwareCommand.CorrelationId = this.CorrelationId;
+                }
+
                 if (commandValidators != null)
                 {
                     this.logger.LogDebug(1, "Found {CommandResultValidatorCount} Command Validators", commandValidators.Length);
@@ -413,6 +419,23 @@
                 {
                     this.logger.LogError("Query Handler Not Found - {QueryName} - {QueryType} - {ResultType}", query.EventName, query.GetType(), typeof(TQueryResult));
                     throw new QueryHandlerNotFoundException(query);
+                }
+
+                if (query is IContextAware contextAwareQuery)
+                {
+                    if (this.Context == null)
+                    {
+                        this.logger.LogWarning(1, "Query {QueryName} Is Context Aware, Context Was Not Set.{correlationId} - {CommandType}", query.EventName, this.CorrelationId, query.GetType());
+                    }
+                    else
+                    {
+                        contextAwareQuery.SetContext(dispatcherContext: this.Context);
+                    }
+                }
+
+                if (queryHandler is ICorrelationAware correlationAwareQuery)
+                {
+                    correlationAwareQuery.CorrelationId = this.CorrelationId;
                 }
 
                 this.logger.LogDebug(3, "Found Handler - {HandlerType} - {ResultType}", query.GetType(), typeof(TQueryResult));

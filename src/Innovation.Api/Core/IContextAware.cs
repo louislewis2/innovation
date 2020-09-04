@@ -1,4 +1,4 @@
-﻿namespace Innovation.Api.Commanding
+﻿namespace Innovation.Api.Core
 {
     using Innovation.Api.Dispatching;
 
