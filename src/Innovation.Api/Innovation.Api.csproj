@@ -4,7 +4,7 @@
     <Description>Contains types and interfaces that are used to interact with the dispatcher and runtime</Description>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <Authors>Louis Lewis</Authors>
-    <Version>3.0.0-beta2</Version>
+    <Version>3.0.0-beta3</Version>
     <PackageTags>Innovation; CQRS</PackageTags>
     <PackageProjectUrl>https://github.com/louislewis2/innovation</PackageProjectUrl>
     <PackageReleaseNotes>Add Support For CorrelationId</PackageReleaseNotes>
