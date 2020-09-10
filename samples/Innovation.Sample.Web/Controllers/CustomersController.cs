@@ -6,6 +6,7 @@
     using Microsoft.Extensions.DependencyInjection;
 
     using Innovation.Api.Dispatching;
+    using Innovation.Integration.AspNetCore;
 
     using Innovation.Sample.Api.Paging;
     using Innovation.Sample.Api.Customers.Queries;
@@ -13,14 +14,14 @@
     using Innovation.Sample.Api.Customers.ViewModels;
 
     [Route("api/[controller]")]
-    public class CustomersController : Controller
+    public class CustomersController : InnovationBaseController
     {
         #region Methods
 
         [HttpGet]
         public async Task<IActionResult> Query(QueryPage queryPage)
         {
-            return this.Ok(await this.GetDispatcher().Query<QueryPage, GenericResultsList<CustomerLite>>(queryPage));
+            return this.Ok(await this.Dispatcher.Query<QueryPage, GenericResultsList<CustomerLite>>(queryPage));
         }
 
         [HttpGet("{id:Guid}")]
@@ -33,7 +34,7 @@
 
             var query = new GetCustomer(id: id);
 
-            var customerViewModel = await this.GetDispatcher().Query<GetCustomer, CustomerLite>(query);
+            var customerViewModel = await this.Dispatcher.Query<GetCustomer, CustomerLite>(query);
 
             if (customerViewModel == null)
             {
@@ -51,7 +52,7 @@
                 return this.BadRequest("command is required");
             }
 
-            return this.Ok(await this.GetDispatcher().Command(command: command));
+            return this.Ok(await this.Dispatcher.Command(command: command));
         }
 
         [HttpDelete("{id:Guid}")]
@@ -64,18 +65,9 @@
 
             var command = new DeleteCustomer(id: id);
 
-            return this.Ok(await this.GetDispatcher().Command(command: command));
+            return this.Ok(await this.Dispatcher.Command(command: command));
         }
 
         #endregion Methods
-
-        #region Private Methods
-
-        private IDispatcher GetDispatcher()
-        {
-            return this.HttpContext.RequestServices.GetRequiredService<IDispatcher>();
-        }
-
-        #endregion Private Methods
     }
 }

@@ -4,10 +4,10 @@
     <Description>In Process Service Bus</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Authors>Louis Lewis</Authors>
-    <Version>3.0.0-beta3</Version>
+    <Version>3.0.0-beta4</Version>
     <PackageTags>Innovation; CQRS, Service Bus, InProcess</PackageTags>
     <PackageProjectUrl>https://github.com/louislewis2/innovation</PackageProjectUrl>
-    <PackageReleaseNotes>Add Support For CorrelationId</PackageReleaseNotes>
+    <PackageReleaseNotes>Ignore Empty CorrelationId</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

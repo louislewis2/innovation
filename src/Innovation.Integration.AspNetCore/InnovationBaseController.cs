@@ -43,7 +43,10 @@
 
             if (this.HttpContext.Request.Headers.TryGetValue(correlationIdOptions.Header, out StringValues correlationId))
             {
-                dispatcher.SetCorrelationId(correlationId);
+                if (!string.IsNullOrWhiteSpace(value: correlationId))
+                {
+                    dispatcher.SetCorrelationId(correlationId);
+                }
             }
 
             return dispatcher;

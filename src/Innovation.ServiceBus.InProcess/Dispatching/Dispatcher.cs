@@ -59,7 +59,10 @@
 
         public void SetCorrelationId(string correlationId)
         {
-            this.CorrelationId = correlationId;
+            if (!string.IsNullOrWhiteSpace(value: correlationId))
+            {
+                this.CorrelationId = correlationId;
+            }
         }
 
         public void SetContext(IDispatcherContext dispatcherContext)
