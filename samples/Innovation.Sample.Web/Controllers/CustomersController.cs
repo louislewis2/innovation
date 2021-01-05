@@ -3,9 +3,7 @@
     using System;
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Mvc;
-    using Microsoft.Extensions.DependencyInjection;
 
-    using Innovation.Api.Dispatching;
     using Innovation.Integration.AspNetCore;
 
     using Innovation.Sample.Api.Paging;
@@ -27,7 +25,7 @@
         [HttpGet("{id:Guid}")]
         public async Task<IActionResult> Single(Guid id)
         {
-            if (id == null || id == Guid.Empty)
+            if (id == Guid.Empty)
             {
                 return this.BadRequest("A valid id is required");
             }
@@ -58,7 +56,7 @@
         [HttpDelete("{id:Guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            if (id == null || id == Guid.Empty)
+            if (id == Guid.Empty)
             {
                 return this.BadRequest("A valid id is required");
             }

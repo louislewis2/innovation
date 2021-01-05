@@ -5,9 +5,6 @@
 A simple framework which aims to provide the ability to use a CQRS pattern in your code base,
 currently with immediate consistency. It does not yet implement or try support Event Sourcing.
 
-Version 1.X, Will Be The Last To Support Dot Net Core 2.X.
-The Next Version Will Support Dot Net Core 3.x
-
 ## TODO's
 
 
@@ -25,7 +22,7 @@ They Can Be Used As Example For Logging Or To Prime Other Services About An Impe
 While The Command Is Passed In By Reference, It Is Not Advised To Edit The Object.
 The Command Reactor Has No Influence Over Pipeline Execution
 
-These Are Run In Parallel In A Background Thread
+These Are Run In Parallel On A Background Thread
 
 ### Command Interceptors
 
@@ -46,7 +43,7 @@ While There Can Be Multiple Implementations, The Pipeline Will Return After The 
 Command Result Reactors Are The Final Step In The Command Dispatching Pipeline.
 The Can Be Used As Example For Logging Or Auditing. The Command Result Reactor Has No Influence Over Pipeline Execution
 
-These Are Run In Parallel In A Background Thread
+These Are Run In Parallel On A Background Thread
 
 ### Commands
 
@@ -106,6 +103,7 @@ This Is To Support A Modular Approach.
 ## Supported .Net Frameworks
 
 1. .Net Standard 2.0
+2. .Net 5.0
 
 ## Samples
 
@@ -120,8 +118,8 @@ This is to ensure that the loading capability can be correctly tested.
 
 In order to build the solution, you will need to following items
 
-1. Visual Studio 2019 >= 16.3.2
+1. Visual Studio 2019 >= 16.8.3
 2. Visual Studio .Net Framework Targeting Packs and SDK's for .Net 4.5.1 through .Net 4.6.2 (See Visual Studio Installer - Modify - Individual Components)
-3. Latest .Net Core SDK [Download Link](https://download.microsoft.com/download/0/F/D/0FD852A4-7EA1-4E2A-983A-0484AC19B92C/dotnet-sdk-2.0.0-win-x64.exe)
-4. Latest .Net Core Runtime [Download Link](https://download.microsoft.com/download/5/6/B/56BFEF92-9045-4414-970C-AB31E0FC07EC/dotnet-runtime-2.0.0-win-x64.exe)
+3. Latest .Net Core SDK [Download Link](https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-5.0.101-windows-x64-installer)
+4. Latest .Net Core Runtime [Download Link](https://dotnet.microsoft.com/download/dotnet/current/runtime)
 

@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <Description>Contains Helpers For Asp.Net Core. Dispatching Base Class And Correlation Id Support</Description>
-    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>net5.0</TargetFrameworks>
     <Authors>Louis Lewis</Authors>
-    <Version>3.0.0-beta4</Version>
+    <Version>3.0.0-beta5</Version>
     <PackageTags>Innovation; CQRS</PackageTags>
     <PackageProjectUrl>https://github.com/louislewis2/innovation</PackageProjectUrl>
-    <PackageReleaseNotes>Fix Reference Error</PackageReleaseNotes>
+    <PackageReleaseNotes>Use DotNet 5</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

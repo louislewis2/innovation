@@ -4,14 +4,14 @@
     <Description>Contains types and interfaces that are used to interact with the dispatcher and runtime</Description>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <Authors>Louis Lewis</Authors>
-    <Version>3.0.0-beta4</Version>
+    <Version>3.0.0-beta5</Version>
     <PackageTags>Innovation; CQRS</PackageTags>
     <PackageProjectUrl>https://github.com/louislewis2/innovation</PackageProjectUrl>
-    <PackageReleaseNotes>Add Support For CorrelationId</PackageReleaseNotes>
+    <PackageReleaseNotes>Use DotNet 5</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.ComponentModel.Annotations" Version="4.7.0" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
   </ItemGroup>
 
 </Project>
