@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29326.143
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33424.131
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{61B6166E-F2F6-4870-B9C6-4C78EDCB78E6}"
 EndProject
@@ -27,12 +27,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Innovation.Sample.Console",
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{95B24DAB-DC77-4258-BD8F-4A3BC97F9519}"
 	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
 		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Innovation.Sample.Web", "samples\Innovation.Sample.Web\Innovation.Sample.Web.csproj", "{5F5CBD5A-9202-4425-A98D-5C67D02BC931}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Innovation.Integration.AspNetCore", "src\Innovation.Integration.AspNetCore\Innovation.Integration.AspNetCore.csproj", "{3EF631A2-B615-4388-8BDF-6EB9847DC346}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Innovation.Integration.AspNetCore", "src\Innovation.Integration.AspNetCore\Innovation.Integration.AspNetCore.csproj", "{3EF631A2-B615-4388-8BDF-6EB9847DC346}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

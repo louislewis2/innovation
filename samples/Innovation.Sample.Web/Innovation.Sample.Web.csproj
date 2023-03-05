@@ -1,15 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Innovation.Api\Innovation.Api.csproj" />
-    <ProjectReference Include="..\..\src\Innovation.Integration.AspNetCore\Innovation.Integration.AspNetCore.csproj" />
-    <ProjectReference Include="..\..\src\Innovation.ServiceBus.InProcess\Innovation.ServiceBus.InProcess.csproj" />
-    <ProjectReference Include="..\Innovation.Sample.Api\Innovation.Sample.Api.csproj" />
-    <ProjectReference Include="..\Innovation.Sample.Data\Innovation.Sample.Data.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\Innovation.Api\Innovation.Api.csproj" />
+		<ProjectReference Include="..\Innovation.Sample.Api\Innovation.Sample.Api.csproj" />
+		<ProjectReference Include="..\Innovation.Sample.Data\Innovation.Sample.Data.csproj" />
+		<ProjectReference Include="..\..\src\Innovation.ServiceBus.InProcess\Innovation.ServiceBus.InProcess.csproj" />
+		<ProjectReference Include="..\..\src\Innovation.Integration.AspNetCore\Innovation.Integration.AspNetCore.csproj" />
+	</ItemGroup>
 
 </Project>

@@ -1,31 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
-    <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
-  
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="5.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="5.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="5.0.1" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="xunit" Version="2.4.2" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Innovation.Api\Innovation.Api.csproj" />
-    <ProjectReference Include="..\..\src\Innovation.ServiceBus.InProcess\Innovation.ServiceBus.InProcess.csproj" />
-    <ProjectReference Include="..\Innovation.ApiSample\Innovation.ApiSample.csproj" />
-    <ProjectReference Include="..\Innovation.SampleApi.Consumer\Innovation.SampleApi.Consumer.csproj" />
-  </ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
+        <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="7.0.3" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="7.0.3" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="7.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Innovation.Api\Innovation.Api.csproj" />
+        <ProjectReference Include="..\Innovation.ApiSample\Innovation.ApiSample.csproj" />
+        <ProjectReference Include="..\Innovation.SampleApi.Consumer\Innovation.SampleApi.Consumer.csproj" />
+        <ProjectReference Include="..\..\src\Innovation.ServiceBus.InProcess\Innovation.ServiceBus.InProcess.csproj" />
+    </ItemGroup>
 </Project>
