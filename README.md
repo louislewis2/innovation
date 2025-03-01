@@ -5,6 +5,27 @@
 A simple framework which aims to provide the ability to use a CQRS pattern in your code base,
 currently with immediate consistency. It does not yet implement or try support Event Sourcing.
 
+# New Version Icomming
+
+A new version of this library being worked on actively.
+Primarily focusing on performance improvments.
+
+There are some breaking changes, primarily taking advantage of ValueTask replacing Task.
+
+Some early benchmark results...
+
+## Commanding Current Version
+
+|  Method |     Mean |    Error |   StdDev | Allocated |
+|-------- |---------:|---------:|---------:|----------:|
+| Command | 25.09 ms | 0.468 ms | 0.609 ms |  73.08 KB |
+
+## Commanding New Version
+
+|  Method |     Mean |   Error |  StdDev |   Gen0 | Allocated |
+|-------- |---------:|--------:|--------:|-------:|----------:|
+| Command | 161.1 ns | 1.33 ns | 1.18 ns | 0.0060 |      64 B |
+
 ## TODO's
 
 
