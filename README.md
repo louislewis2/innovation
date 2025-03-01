@@ -5,7 +5,7 @@
 A simple framework which aims to provide the ability to use a CQRS pattern in your code base,
 currently with immediate consistency. It does not yet implement or try support Event Sourcing.
 
-# New Version Icomming
+# New Version Incomming
 
 A new version of this library being worked on actively.
 Primarily focusing on performance improvments.
