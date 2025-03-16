@@ -4,66 +4,119 @@
     using System.Threading.Tasks;
     using Microsoft.AspNetCore.Mvc;
 
+    using Innovation.Api.CommandHelpers;
     using Innovation.Integration.AspNetCore;
 
     using Innovation.Sample.Api.Paging;
     using Innovation.Sample.Api.Customers.Queries;
+    using Innovation.Sample.Api.Customers.Criteria;
     using Innovation.Sample.Api.Customers.Commands;
     using Innovation.Sample.Api.Customers.ViewModels;
 
+    /// <summary>
+    /// Exposes functionality relating to customers
+    /// </summary>
     [Route("api/[controller]")]
     public class CustomersController : InnovationBaseController
     {
         #region Methods
 
+        /// <summary>
+        /// Provides server side paging functionality for retrieving customers
+        /// </summary>
+        /// <param name="queryPage">Provides settings for performing server side paging</param>
+        /// <returns>Returns paged results, according to the provided criteria</returns>
         [HttpGet]
+        [ProducesResponseType(type: typeof(GenericResultsList<CustomerLite>), statusCode: 200)]
+        [ProducesResponseType(type: typeof(CommandResult), statusCode: 400)]
         public async Task<IActionResult> Query(QueryPage queryPage)
         {
-            return this.Ok(await this.Dispatcher.Query<QueryPage, GenericResultsList<CustomerLite>>(queryPage));
+            try
+            {
+                var genericResultsList = await this.Query<QueryPage, GenericResultsList<CustomerLite>>(query: queryPage);
+
+                return this.Ok(value: genericResultsList);
+            }
+            catch(Exception ex)
+            {
+                return this.GenerateReturnResult(ex: ex);
+            }
         }
 
-        [HttpGet("{id:Guid}")]
-        public async Task<IActionResult> Single(Guid id)
+        /// <summary>
+        /// Loads a single customer, based on the unique customerId provided
+        /// </summary>
+        /// <param name="customerId"></param>
+        /// <returns>Return a CustomerLite object if the record exists</returns>
+        [ProducesResponseType(type: typeof(CustomerLite), statusCode: 200)]
+        [ProducesResponseType(type: typeof(CommandResult), statusCode: 400)]
+        [HttpGet("{customerId:Guid}")]
+        public async Task<IActionResult> Single(Guid customerId)
         {
-            if (id == Guid.Empty)
+            try
             {
-                return this.BadRequest("A valid id is required");
+                var getCustomerQuery = new GetCustomerQuery(customerId: customerId);
+
+                return await this.Query<GetCustomerQuery, CustomerLite>(query: getCustomerQuery, customerId);
             }
-
-            var query = new GetCustomer(id: id);
-
-            var customerViewModel = await this.Dispatcher.Query<GetCustomer, CustomerLite>(query);
-
-            if (customerViewModel == null)
+            catch (Exception ex)
             {
-                return this.NotFound($"Resource with identifier '{id}' not found");
+                return this.GenerateReturnResult(ex: ex);
             }
-
-            return this.Ok(customerViewModel);
         }
 
+        /// <summary>
+        /// Inserts a new customer
+        /// </summary>
+        /// <param name="createCustomerCriteria"></param>
+        /// <returns>An objecting indicating whethere the insert was suceful or not</returns>
+        [ProducesResponseType(type: typeof(CommandResult), statusCode: 200)]
+        [ProducesResponseType(type: typeof(CommandResult), statusCode: 400)]
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody]CreateCustomer command)
+        public async Task<IActionResult> Create([FromBody] CreateCustomerCriteria createCustomerCriteria)
         {
-            if (command == null)
+            try
             {
-                return this.BadRequest("command is required");
-            }
+                if (!ModelState.IsValid)
+                {
+                    return this.HandleModelStateErrors();
+                }
 
-            return this.Ok(await this.Dispatcher.Command(command: command));
+                var createCustomerCommand = new CreateCustomerCommand(createCustomerCriteria: createCustomerCriteria);
+
+                return await this.Command(command: createCustomerCommand);
+            }
+            catch (Exception ex)
+            {
+                return this.GenerateReturnResult(ex: ex);
+            }
         }
 
-        [HttpDelete("{id:Guid}")]
-        public async Task<IActionResult> Delete(Guid id)
+        /// <summary>
+        /// Deletes a customer
+        /// </summary>
+        /// <param name="customerId">The customerId to be deleted</param>
+        /// <returns>An objecting indicating whethere the delete was suceful or not</returns>
+        [ProducesResponseType(type: typeof(CommandResult), statusCode: 200)]
+        [ProducesResponseType(type: typeof(CommandResult), statusCode: 400)]
+        [HttpDelete("{customerId:Guid}")]
+        public async Task<IActionResult> Delete(Guid customerId)
         {
-            if (id == Guid.Empty)
+            try
             {
-                return this.BadRequest("A valid id is required");
+                if (customerId == default)
+                {
+                    return this.CreateErrorFromMessage("A valid id is required");
+                }
+
+                var deleteCustomerCommand = new DeleteCustomerCommand(customerId: customerId);
+
+                return await this.Command(command: deleteCustomerCommand);
             }
-
-            var command = new DeleteCustomer(id: id);
-
-            return this.Ok(await this.Dispatcher.Command(command: command));
+            catch (Exception ex)
+            {
+                return this.GenerateReturnResult(ex: ex);
+            }
         }
 
         #endregion Methods

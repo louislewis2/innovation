@@ -1,13 +1,11 @@
 ﻿namespace Innovation.ServiceBus.InProcess.Validators
 {
     using System;
-    using System.Linq;
-    using System.Reflection;
-    using System.Collections;
+    using System.Threading.Tasks;
     using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations;
 
-    using Innovation.Api.Commanding;
+    using MiniValidation;
 
     public class DataAnnotationsValidator
     {
@@ -28,79 +26,32 @@
 
         #region Methods
 
-        public bool TryValidateObject(object obj, ICollection<ValidationResult> results, IDictionary<object, object> validationContextItems = null)
+        public async ValueTask<(bool isValid, IDictionary<string, string[]> Errors)> TryValidateObject<TTarget>(TTarget target)
         {
-            return Validator.TryValidateObject(obj, new ValidationContext(instance: obj, serviceProvider: this.serviceProvider, items: validationContextItems), validationResults: results, validateAllProperties: true);
+            return await MiniValidator.TryValidateAsync(target, this.serviceProvider, false);
         }
 
-        public bool TryValidateObjectRecursive<T>(T obj, List<ValidationResult> results, IDictionary<object, object> validationContextItems = null)
+        public async ValueTask<(bool isValid, IDictionary<string, string[]> Errors)> TryValidateObjectRecursive<TTarget>(TTarget target)
         {
-            return TryValidateObjectRecursive(obj, results, new HashSet<object>(), validationContextItems);
+            return await MiniValidator.TryValidateAsync(target, this.serviceProvider, true);
         }
 
-        private bool TryValidateObjectRecursive<T>(T obj, List<ValidationResult> results, ISet<object> validatedObjects, IDictionary<object, object> validationContextItems = null)
+        #endregion Methods
+
+        #region Methods
+
+        private async ValueTask<(bool IsValid, IDictionary<string, string[]> Errors)> TryValidateObjectImplementationNew<TTarget>(TTarget target, bool recursive)
         {
-            if (validatedObjects.Contains(obj))
-            {
-                return true;
-            }
+            return await MiniValidator.TryValidateAsync(target, this.serviceProvider, recursive);
+        }
 
-            validatedObjects.Add(obj);
-            bool result = TryValidateObject(obj, results, validationContextItems);
+        private async ValueTask<(bool isValid, ValidationResult[] validationResults)> TryValidateObjectImplementation<TTarget>(TTarget target, bool recursive)
+        {
+            var validationResult = await MiniValidator.TryValidateAsync(target, this.serviceProvider, recursive);
 
-            var properties = obj.GetType().GetProperties().Where(prop => prop.CanRead
-                && !prop.GetCustomAttributes(typeof(SkipRecursiveValidation), false).Any()
-                && prop.GetIndexParameters().Length == 0).ToList();
+            var validatorResults = validationResult.Errors.ConvertToValidationResult();
 
-            foreach (var property in properties)
-            {
-                if (property.PropertyType == typeof(string) || property.PropertyType.IsValueType) continue;
-
-                var value = obj.GetPropertyValue(property.Name);
-
-                if (value == null) continue;
-
-                var asEnumerable = value as IEnumerable;
-
-                if (asEnumerable != null)
-                {
-                    foreach (var enumObj in asEnumerable)
-                    {
-                        if (enumObj != null)
-                        {
-                            var nestedResults = new List<ValidationResult>();
-
-                            if (!TryValidateObjectRecursive(enumObj, nestedResults, validatedObjects, validationContextItems))
-                            {
-                                result = false;
-
-                                foreach (var validationResult in nestedResults)
-                                {
-                                    PropertyInfo property1 = property;
-                                    results.Add(new ValidationResult(validationResult.ErrorMessage, validationResult.MemberNames.Select(x => property1.Name + '.' + x)));
-                                }
-                            };
-                        }
-                    }
-                }
-                else
-                {
-                    var nestedResults = new List<ValidationResult>();
-
-                    if (!TryValidateObjectRecursive(value, nestedResults, validatedObjects, validationContextItems))
-                    {
-                        result = false;
-
-                        foreach (var validationResult in nestedResults)
-                        {
-                            PropertyInfo property1 = property;
-                            results.Add(new ValidationResult(validationResult.ErrorMessage, validationResult.MemberNames.Select(x => property1.Name + '.' + x)));
-                        }
-                    };
-                }
-            }
-
-            return result;
+            return (validationResult.IsValid, validatorResults);
         }
 
         #endregion Methods

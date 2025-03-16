@@ -1,69 +1,72 @@
 ﻿namespace Innovation.ServiceBus.InProcess.Tests
 {
-    using System.Linq;
     using System.Threading.Tasks;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    using Xunit;
     using Innovation.Api.CommandHelpers;
 
+    using ApiSample;
+    using ApiSample.Shared.Criteria;
     using ApiSample.Vendors.Criteria;
     using ApiSample.Vendors.Commands;
     using ApiSample.Customers.Criteria;
     using ApiSample.Customers.Commands;
 
+    [TestClass]
     public class CommandTests : TestBase
     {
-        [Fact]
-        public void Can_Handle_Insert_Customer()
-        {
-            // Arrange
-            var insertCustomerCriteria = new CustomerCriteria(
-                name: "Innovation",
-                userName: "somecrazynamethatdoesnotexistyet");
-            var insertCustomerCommand = new InsertCustomer(customerCriteria: insertCustomerCriteria);
-
-            // Act
-            var dispatcher = this.GetDispatcher();
-            var canCommand = dispatcher.CanCommand(command: insertCustomerCommand);
-
-            // Assert
-            Assert.True(condition: canCommand);
-        }
-
-        [Fact]
+        [TestMethod]
         public async Task Can_Insert_Customer()
         {
             // Arrange
             var insertCustomerCriteria = new CustomerCriteria(
                 name: "Innovation",
                 userName: "somecrazynamethatdoesnotexistyet");
-            var insertCustomerCommand = new InsertCustomer(customerCriteria: insertCustomerCriteria);
+            var insertCustomerCommand = new InsertCustomerCommand(customerCriteria: insertCustomerCriteria);
 
             // Act
             var dispatcher = this.GetDispatcher();
             var insertCustomerCommandResult = await dispatcher.Command(command: insertCustomerCommand, suppressExceptions: false);
 
             // Assert
-            Assert.True(condition: insertCustomerCommandResult.Success);
+            Assert.IsTrue(condition: insertCustomerCommandResult.Success);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task Can_Insert_Vendor()
         {
             // Arrange
+            var addressCriteria = new AddressCriteria(
+                line1: "1 Some street",
+                code: "0001");
+
             var vendorCriteria = new VendorCriteria(
                 name: "Innovation",
                 userName: "SomeUserNameThatRocks",
-                address: null);
-            var insertVendorCommand = new InsertVendor(vendorCriteria: vendorCriteria);
+                addressCriteria: addressCriteria);
+            var insertVendorCommand = new InsertVendorCommand(vendorCriteria: vendorCriteria);
 
             // Act
             var dispatcher = this.GetDispatcher();
             var insertVendorCommandResult = await dispatcher.Command(command: insertVendorCommand, suppressExceptions: false);
 
             // Assert
-            Assert.True(condition: insertVendorCommandResult.Success);
-            Assert.IsType<CommandResult>(@object: insertVendorCommandResult);
+            Assert.IsTrue(condition: insertVendorCommandResult.Success);
+            Assert.IsInstanceOfType<CommandResult>(value: insertVendorCommandResult);
+        }
+
+        [TestMethod]
+        public async Task Can_Insert_BlankCommand()
+        {
+            // Arrange
+            var insertBlankCommand = new BlankCommand();
+
+            // Act
+            var dispatcher = this.GetDispatcher();
+            var insertCustomerCommandResult = await dispatcher.Command(command: insertBlankCommand, suppressExceptions: false);
+
+            // Assert
+            Assert.IsTrue(condition: insertCustomerCommandResult.Success);
         }
     }
 }

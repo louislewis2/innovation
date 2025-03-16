@@ -1,6 +1,7 @@
 ﻿namespace Innovation.ServiceBus.InProcess.Exceptions
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     using Api.Commanding;
 
@@ -14,7 +15,8 @@
 
         #region Constructor
 
-        public CommandHandlerNotFoundException(ICommand command) : base($"Command Handler not Found. Command.Name: {command.EventName}; Command.Type: {command.GetType()}")
+        public CommandHandlerNotFoundException([DisallowNull]ICommand command) 
+            : base(message: $"Command Handler not Found. Command.Name: {command.EventName}; Command.Type: {command.GetType()}")
         {
             this.command = command;
         }

@@ -20,6 +20,9 @@
     using Api.Commanding;
     using Api.Validation;
     using Api.Interceptors;
+    using Innovation.Api.Core;
+    using Innovation.Api.Dispatching;
+    using Innovation.ServiceBus.InProcess.Dispatching;
 
     public class InnovationRuntime
     {
@@ -34,24 +37,43 @@
         private readonly IServiceProvider serviceProvider;
         private readonly ILogger logger;
 
+        private readonly bool isValidationEnabled;
+        private readonly InnovationOptions innovationOptions;
+        private readonly Dictionary<Type, int> commandLookup = new Dictionary<Type, int>();
+
         #endregion Fields
 
         #region Constructor
 
-        public InnovationRuntime(IServiceCollection services, ILogger<InnovationRuntime> logger, IServiceProvider serviceProviderInstance)
+        public InnovationRuntime(
+            IServiceCollection services,
+            ILogger<InnovationRuntime> logger,
+            IServiceProvider serviceProviderInstance,
+            IOptions<InnovationOptions> innovationOptions)
         {
             this.services = services;
             this.logger = logger;
             this.serviceProvider = serviceProviderInstance;
+            this.innovationOptions = innovationOptions.Value;
+            this.isValidationEnabled = this.innovationOptions.IsValidationEnabled;
         }
 
         #endregion Constructor
 
         #region Methods
 
+        public bool HasAuditStoreRegistered { get; private set; }
+
+        public int GetCommandBits(in Type commandType)
+        {
+            return this.commandLookup[key: commandType];
+        }
+
         public void Configure()
         {
             this.RegisterHandlers();
+            this.CheckForAuditStore();
+            this.LogCommandBits();
         }
 
         #endregion Methods
@@ -79,13 +101,16 @@
                 }
             }
 
-            var loadedAssemblies = this.LoadFromLocations();
-
-            if (loadedAssemblies?.Length > 0)
+            if (!this.innovationOptions.DisableDynamicLoading)
             {
-                foreach (var loadedAssembly in loadedAssemblies)
+                var loadedAssemblies = this.LoadFromLocations();
+
+                if (loadedAssemblies?.Length > 0)
                 {
-                    assemblyDictionary.Add(loadedAssembly.GetName().Name, loadedAssembly);
+                    foreach (var loadedAssembly in loadedAssemblies)
+                    {
+                        assemblyDictionary.Add(loadedAssembly.GetName().Name, loadedAssembly);
+                    }
                 }
             }
 
@@ -167,6 +192,27 @@
                                 this.logger.LogDebug("{TypeName} Handles {CommandName}", type.Name, genericArguments[0].Name);
                             }
 
+                            HandleCommandBits(commandType: genericArguments[0], commandBitTypes: CommandBitTypes.CommandHandlerRegistered);
+
+                            var isContextAware = genericArguments[0].GetInterfaces().Any(i => i.IsAssignableFrom(typeof(IContextAware)));
+
+                            if (isContextAware)
+                            {
+                                HandleCommandBits(commandType: genericArguments[0], commandBitTypes: CommandBitTypes.ContextAware);
+                            }
+
+                            var isCorrelationIdAware = genericArguments[0].GetInterfaces().Any(i => i.IsAssignableFrom(typeof(ICorrelationAware)));
+
+                            if (isCorrelationIdAware)
+                            {
+                                HandleCommandBits(commandType: genericArguments[0], commandBitTypes: CommandBitTypes.CorrelationIdAware);
+                            }
+
+                            if (this.isValidationEnabled)
+                            {
+                                HandleCommandBits(commandType: genericArguments[0], commandBitTypes: CommandBitTypes.IsValidationEnabled);
+                            }
+
                             this.services.TryAddTransient(commandHandlerInterface, type.AsType());
                         }
                     }
@@ -185,6 +231,8 @@
                             {
                                 this.logger.LogDebug("{TypeName} Validates {CommandName}", type.Name, genericArguments[0].Name);
                             }
+
+                            HandleCommandBits(commandType: genericArguments[0], commandBitTypes: CommandBitTypes.CommandValidator);
 
                             this.services.TryAddTransient(commandValidatorInterface, type.AsType());
                         }
@@ -223,11 +271,19 @@
 
                     if (isCommandReactor)
                     {
-                        var queryHandlerInterfaces = type.ImplementedInterfaces.Where(x => x.IsGenericTypeOf(typeof(ICommandReactor<ICommand>)));
+                        var commandReactorInterfaces = type.ImplementedInterfaces
+                            .Where(x => x.IsGenericTypeOf(typeof(ICommandReactor<ICommand>)))
+                            .ToArray();
 
-                        this.logger.LogDebug("{TypeName} Contains {Count} Command Reactor's", type.Name, queryHandlerInterfaces.Count());
+                        this.logger.LogDebug("{TypeName} Contains {Count} Command Reactor's", type.Name, commandReactorInterfaces.Count());
 
-                        foreach (var queryHandlerInterface in queryHandlerInterfaces)
+                        if (commandReactorInterfaces.Length > 0)
+                        {
+                            var genericArguments = commandReactorInterfaces[0].GetGenericArguments();
+                            HandleCommandBits(commandType: genericArguments[0], commandBitTypes: CommandBitTypes.CommandReactor);
+                        }
+
+                        foreach (var queryHandlerInterface in commandReactorInterfaces)
                         {
                             this.services.TryAddTransient(queryHandlerInterface, type.AsType());
                         }
@@ -235,11 +291,19 @@
 
                     if (isCommandResultReactor)
                     {
-                        var queryHandlerInterfaces = type.ImplementedInterfaces.Where(x => x.IsGenericTypeOf(typeof(ICommandResultReactor<ICommand>)));
+                        var commandResultReactorInterfaces = type.ImplementedInterfaces
+                            .Where(x => x.IsGenericTypeOf(typeof(ICommandResultReactor<ICommand>)))
+                            .ToArray();
 
-                        this.logger.LogDebug("{TypeName} Contains {Count} Command Result Reactor's", type.Name, queryHandlerInterfaces.Count());
+                        this.logger.LogDebug("{TypeName} Contains {Count} Command Result Reactor's", type.Name, commandResultReactorInterfaces.Count());
 
-                        foreach (var queryHandlerInterface in queryHandlerInterfaces)
+                        if (commandResultReactorInterfaces.Length > 0)
+                        {
+                            var genericArguments = commandResultReactorInterfaces[0].GetGenericArguments();
+                            HandleCommandBits(commandType: genericArguments[0], commandBitTypes: CommandBitTypes.CommandResultReactor);
+                        }
+
+                        foreach (var queryHandlerInterface in commandResultReactorInterfaces)
                         {
                             this.services.TryAddTransient(queryHandlerInterface, type.AsType());
                         }
@@ -247,9 +311,17 @@
 
                     if (isCommandInterceptor)
                     {
-                        var commandInterceptorInterfaces = type.ImplementedInterfaces.Where(x => x.IsGenericTypeOf(typeof(ICommandInterceptor<ICommand>)));
+                        var commandInterceptorInterfaces = type.ImplementedInterfaces
+                            .Where(x => x.IsGenericTypeOf(typeof(ICommandInterceptor<ICommand>)))
+                            .ToArray();
 
                         this.logger.LogDebug("{TypeName} Contains {Count} Command Interceptor's", type.Name, commandInterceptorInterfaces.Count());
+
+                        if (commandInterceptorInterfaces.Length > 0)
+                        {
+                            var genericArguments = commandInterceptorInterfaces[0].GetGenericArguments();
+                            HandleCommandBits(commandType: genericArguments[0], commandBitTypes: CommandBitTypes.CommandInterceptor);
+                        }
 
                         foreach (var coomandInterceptorInterface in commandInterceptorInterfaces)
                         {
@@ -262,13 +334,11 @@
 
         private Assembly[] LoadFromLocations()
         {
-            var loadedAssemblyList = new List<Assembly>();
-
-            var searchLocations = this.serviceProvider.GetService<IOptions<SearchLocations>>().Value;
-
-            if (searchLocations != null && searchLocations.Locations != null)
+            if (this.innovationOptions.SearchLocations != null && this.innovationOptions.SearchLocations.Length > 0)
             {
-                foreach (var searchLocation in searchLocations.Locations)
+                var loadedAssemblyList = new List<Assembly>();
+
+                foreach (var searchLocation in this.innovationOptions.SearchLocations)
                 {
                     if (Directory.Exists(searchLocation))
                     {
@@ -284,14 +354,16 @@
                             }
                             catch (Exception ex)
                             {
-                                this.logger.LogError(ex.Message, ex);
+                                this.logger.LogError(exception: ex, message: ex.GetInnerMostMessage());
                             }
                         }
                     }
                 }
+
+                return loadedAssemblyList.ToArray();
             }
 
-            return loadedAssemblyList.ToArray();
+            return Array.Empty<Assembly>();
         }
 
         private Assembly[] LoadReferencingLibraries()
@@ -329,6 +401,83 @@
         private bool IsCandidateLibrary(RuntimeLibrary runtimeLibrary)
         {
             return ReferenceAssemblies.Contains(runtimeLibrary.Name) || runtimeLibrary.Dependencies.Any(x => ReferenceAssemblies.Any(y => y.StartsWith(x.Name)));
+        }
+
+        private static int TurnBitOn(int value, CommandBitTypes bitToTurnOn)
+        {
+            return value |= 1 << (int)bitToTurnOn;
+        }
+
+        private void HandleCommandBits(Type commandType, CommandBitTypes commandBitTypes)
+        {
+            //if (commandBitTypes == CommandBitTypes.CommandHandlerRegistered && !this.commandLookup.ContainsKey(commandType))
+            //{
+            //    this.logger.LogDebug(message: $"1: \t HandleCommandBits: {commandType.Name} \t\t CommandBitType: {commandBitTypes}");
+
+            //    this.commandLookup.TryAdd(key: commandType, value: 0);
+
+            //    return;
+            //}
+            //else if (!this.commandLookup.ContainsKey(key: commandType))
+            //{
+            //    this.logger.LogDebug(message: $"2: \t HandleCommandBits: {commandType.Name} \t\t CommandBitType: {commandBitTypes}");
+
+            //    this.commandLookup.TryAdd(key: commandType, value: TurnBitOn(value: 0, commandBitTypes));
+
+            //    return;
+            //}
+
+            this.commandLookup.TryAdd(key: commandType, value: 0);
+            this.logger.LogDebug(message: $"3: \t HandleCommandBits: {commandType.Name} \t\t CommandBitType: {commandBitTypes}");
+            this.commandLookup[key: commandType] = TurnBitOn(value: this.commandLookup[key: commandType], commandBitTypes);
+
+            return;
+        }
+
+        private void CheckForAuditStore()
+        {
+            var auditStore = this.serviceProvider.GetService<IAuditStore>();
+
+            this.HasAuditStoreRegistered = auditStore != null;
+        }
+
+        private void LogCommandBits()
+        {
+            foreach (var keyValuePair in this.commandLookup)
+            {
+                var key = keyValuePair.Key.Name;
+                var bits = Convert.ToString(keyValuePair.Value, 2);
+
+                var processCommandBitsDictionary = this.ProcessCommandBits(commandBits: keyValuePair.Value);
+
+                this.logger.LogDebug(message: $"--------------------{key}--------------------");
+                this.logger.LogDebug(message: $"Command Bits Binary: {bits}");
+
+                this.logger.LogDebug(message: $"********************Bit By Bit********************");
+
+                foreach (var processCommandBits in processCommandBitsDictionary)
+                {
+                    this.logger.LogDebug(message: $"{processCommandBits.Key} is: \t {processCommandBits}");
+                }
+            }
+
+            this.logger.LogDebug(message: $"#################### End ####################");
+        }
+
+        private Dictionary<string, int> ProcessCommandBits(int commandBits)
+        {
+            var commandBitTypeValues = Enum.GetValues<CommandBitTypes>();
+            var commandBitDictionary = new Dictionary<string, int>();
+
+            for (var i = 0; i < commandBitTypeValues.Length; i++)
+            {
+                var commandButTypeName = Enum.GetName(typeof(CommandBitTypes), commandBitTypeValues[i]);
+                var value = (commandBits & (1 << i));
+
+                commandBitDictionary.Add(key: commandButTypeName, value);
+            }
+
+            return commandBitDictionary;
         }
 
         #endregion Private Methods

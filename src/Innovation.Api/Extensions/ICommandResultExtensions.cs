@@ -2,9 +2,9 @@
 {
     public static class ICommandResultExtensions
     {
-        public static T As<T>(this ICommandResult commandResult)
+        public static TCommandResultType As<TCommandResultType>(this ICommandResult commandResult)
         {
-            return (T)commandResult;
+            return (TCommandResultType)commandResult;
         }
     }
 }

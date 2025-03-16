@@ -1,9 +1,11 @@
 ﻿namespace Innovation.Api.Core
 {
+    using System.Diagnostics.CodeAnalysis;
+
     using Innovation.Api.Dispatching;
 
     public interface IContextAware
     {
-        void SetContext(IDispatcherContext dispatcherContext);
+        void SetContext([DisallowNull] IDispatcherContext dispatcherContext);
     }
 }

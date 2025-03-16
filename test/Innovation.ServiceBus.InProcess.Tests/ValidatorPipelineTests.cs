@@ -1,38 +1,39 @@
 ﻿namespace Innovation.ServiceBus.InProcess.Tests
 {
     using System.Threading.Tasks;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    using Xunit;
     using Innovation.Api.Commanding;
 
     using ApiSample.Validation;
+    using ApiSample.Shared.Criteria;
     using ApiSample.Vendors.Criteria;
     using ApiSample.Vendors.Commands;
     using ApiSample.Suppliers.Criteria;
     using ApiSample.Suppliers.Commands;
-    using Innovation.ApiSample.Shared.Criteria;
 
+    [TestClass]
     public class ValidatorPipelineTests : TestBase
     {
         #region Methods
 
-        [Fact]
+        [TestMethod]
         public async Task Can_Receive_ValidationResult()
         {
             // Arrange
             var supplierCriteria = new SupplierCriteria(name: "CoolName");
-            var insertSupplierCommand = new InsertSupplier(supplierCriteria: supplierCriteria);
+            var insertSupplierCommand = new InsertSupplierCommand(supplierCriteria: supplierCriteria);
 
             // Act
             var dispatcher = this.GetDispatcher();
             var commandResult = (await dispatcher.Command(command: insertSupplierCommand)).As<SampleValidationResult>();
 
             // Assert
-            Assert.False(condition: commandResult.Success);
-            Assert.Equal(expected: "Another Test Error Message", actual: commandResult.Errors[0].ErrorMessage);
+            Assert.IsFalse(condition: commandResult.Success);
+            Assert.AreEqual(expected: "Another Test Error Message", actual: commandResult.Errors[0].ErrorMessage);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task Can_Invoke_Command_Validator()
         {
             // Arrange
@@ -40,16 +41,16 @@
             var vendorCriteria = new VendorCriteria(
                 name: "Innovation",
                 userName: "SomeUserNameThatRocks",
-                address: new AddressCriteria(line1: "111 Street", code: null));
-            var insertVendorCommand = new InsertVendor(vendorCriteria: vendorCriteria);
+                addressCriteria: new AddressCriteria(line1: "111 Street", code: null));
+            var insertVendorCommand = new InsertVendorCommand(vendorCriteria: vendorCriteria);
 
             // Act
             var dispatcher = this.GetDispatcher();
             var commandResult = (await dispatcher.Command(command: insertVendorCommand)).As<SampleValidationResult>();
 
             // Assert
-            Assert.False(condition: commandResult.Success);
-            Assert.Equal(expected: "Street Cannot Be 111 Street", actual: commandResult.Errors[0].ErrorMessage);
+            Assert.IsFalse(condition: commandResult.Success);
+            Assert.AreEqual(expected: "Street Cannot Be 111 Street", actual: commandResult.Errors[0].ErrorMessage);
         }
 
         #endregion Methods

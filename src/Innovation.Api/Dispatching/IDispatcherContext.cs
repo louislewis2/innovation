@@ -1,7 +1,9 @@
 ﻿namespace Innovation.Api.Dispatching
 {
+    using System.Diagnostics.CodeAnalysis;
+
     public interface IDispatcherContext
     {
-        void SetCorrelationId(string correlationId);
+        void SetCorrelationId([DisallowNull] string correlationId);
     }
 }

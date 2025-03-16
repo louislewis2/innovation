@@ -1,15 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>net7.0</TargetFrameworks>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFrameworks>net9.0</TargetFrameworks>
+        <NoWarn>CS1591</NoWarn>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="7.0.3" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.3" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Innovation.Api\Innovation.Api.csproj" />
-    <ProjectReference Include="..\Innovation.Sample.Api\Innovation.Sample.Api.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Innovation.Api\Innovation.Api.csproj" />
+        <ProjectReference Include="..\Innovation.Sample.Api\Innovation.Sample.Api.csproj" />
+        <ProjectReference Include="..\Innovation.Sample.Infrastructure\Innovation.Sample.Infrastructure.csproj" />
+    </ItemGroup>
 </Project>

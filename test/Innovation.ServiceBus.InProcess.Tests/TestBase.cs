@@ -15,15 +15,15 @@
             var services = new ServiceCollection();
             services.AddLogging(config =>
             {
-                config.AddDebug().SetMinimumLevel(LogLevel.Information);
+                config.SetMinimumLevel(LogLevel.Debug);
+                config.AddDebug();
                 config.AddConsole();
+                config.AddDebug();
             });
 
             services.AddOptions();
-
-            services.AddInnovation();
-
             services.AddConsumer();
+            services.AddInnovation();
 
             this.ServiceProvider = services.BuildServiceProvider();
         }

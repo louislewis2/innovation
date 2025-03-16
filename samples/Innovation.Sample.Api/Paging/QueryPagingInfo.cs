@@ -6,11 +6,18 @@
     {
         #region Constructor
 
+        public QueryPagingInfo(QueryPage queryPage, int totalItemCount)
+        {
+            this.CurrentPage = queryPage.Page;
+            this.PageSize = queryPage.PageSize;
+            this.TotalItemCount = totalItemCount;
+        }
+
         public QueryPagingInfo(int currentPage, int pageSize, int totalItemCount)
         {
-            CurrentPage = currentPage;
-            TotalItemCount = totalItemCount;
-            PageSize = pageSize;
+            this.CurrentPage = currentPage;
+            this.TotalItemCount = totalItemCount;
+            this.PageSize = pageSize;
         }
 
         #endregion Constructor

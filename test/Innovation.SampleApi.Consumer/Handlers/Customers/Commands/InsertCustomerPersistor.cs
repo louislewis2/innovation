@@ -7,22 +7,22 @@
 
     using ApiSample.Customers.Commands;
 
-    public class InsertCustomerPersistor : ICommandHandler<InsertCustomer>
+    public class InsertCustomerPersistor : ICommandHandler<InsertCustomerCommand>
     {
         #region Methods
 
-        public async Task<ICommandResult> Handle(InsertCustomer command)
+        public async ValueTask<ICommandResult> Handle(InsertCustomerCommand command)
         {
-            return await this.Persist(command);
+            return await this.Persist(command: command);
         }
 
         #endregion Methods
 
         #region Private Methods
 
-        private async Task<ICommandResult> Persist(InsertCustomer command)
+        private async Task<ICommandResult> Persist(InsertCustomerCommand command)
         {
-            return await Task.FromResult(new CommandResult());
+            return await Task.FromResult(result: new CommandResult());
         }
 
         #endregion Private Methods

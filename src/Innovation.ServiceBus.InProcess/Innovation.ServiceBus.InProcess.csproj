@@ -2,21 +2,23 @@
 
     <PropertyGroup>
         <Description>In Process Service Bus</Description>
-        <TargetFramework>netstandard2.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <Authors>Louis Lewis</Authors>
-        <Version>3.0.0</Version>
+        <Version>4.0.0-alpha1</Version>
         <PackageTags>Innovation; CQRS, Service Bus, InProcess</PackageTags>
         <PackageProjectUrl>https://github.com/louislewis2/innovation</PackageProjectUrl>
-        <PackageReleaseNotes>Use DotNet 7</PackageReleaseNotes>
+        <PackageReleaseNotes>Use DotNet 9</PackageReleaseNotes>
+        <LangVersion>Latest</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="MiniValidation" Version="0.9.2" />
         <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
-        <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
+        <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.3" />
         <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
-        <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="7.0.0" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="9.0.3" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.3" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.3" />
     </ItemGroup>
 
     <ItemGroup>

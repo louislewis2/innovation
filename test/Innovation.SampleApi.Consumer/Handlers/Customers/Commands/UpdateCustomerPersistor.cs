@@ -7,20 +7,20 @@
 
     using ApiSample.Customers.Commands;
 
-    public class UpdateCustomerPersistor : ICommandHandler<UpdateCustomer>
+    public class UpdateCustomerPersistor : ICommandHandler<UpdateCustomerCommand>
     {
         #region Methods
 
-        public async Task<ICommandResult> Handle(UpdateCustomer command)
+        public async ValueTask<ICommandResult> Handle(UpdateCustomerCommand command)
         {
-            return await this.Persist(command);
+            return await this.Persist(command: command);
         }
 
         #endregion Methods
 
         #region Private Methods
 
-        private async Task<ICommandResult> Persist(UpdateCustomer command)
+        private async ValueTask<ICommandResult> Persist(UpdateCustomerCommand command)
         {
             var commandResult = new CommandResult();
 
@@ -33,7 +33,7 @@
                 commandResult.SetRecord(recordId: command.CustomerId);
             }
 
-            return await Task.FromResult(commandResult);
+            return await Task.FromResult(result: commandResult);
         }
 
         #endregion Private Methods

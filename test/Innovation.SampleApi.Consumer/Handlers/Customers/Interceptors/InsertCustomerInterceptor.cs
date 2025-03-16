@@ -9,7 +9,7 @@
 
     using ApiSample.Customers.Commands;
 
-    public class InsertCustomerInterceptor : ICommandInterceptor<InsertCustomer>
+    public class InsertCustomerInterceptor : ICommandInterceptor<InsertCustomerCommand>
     {
         #region Fields
 
@@ -28,7 +28,7 @@
 
         #region Methods
 
-        public async Task Intercept(InsertCustomer command)
+        public async Task Intercept(InsertCustomerCommand command)
         {
             await this.HandleIntercept(command: command);
         }
@@ -37,12 +37,12 @@
 
         #region Private Methods
 
-        private async Task HandleIntercept(InsertCustomer command)
+        private async Task HandleIntercept(InsertCustomerCommand command)
         {
             try
             {
-                var github = new GitHubClient(new ProductHeaderValue("Innovation"));
-                var user = await github.User.Get(command.Criteria.UserName);
+                var github = new GitHubClient(productInformation: new ProductHeaderValue("Innovation"));
+                var user = await github.User.Get(login: command.Criteria.UserName);
 
                 var exists = user != null;
 
@@ -50,7 +50,7 @@
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex.Message, ex);
+                this.logger.LogError(exception: ex, ex.GetInnerMostMessage());
 
                 command.Criteria.SetGithubStatus(existsOnGithub: false);
             }

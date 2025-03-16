@@ -2,18 +2,18 @@
 {
     internal static class ObjectExtensions
     {
-		internal static object GetPropertyValue(this object o, string propertyName)
-		{
-			object objValue = string.Empty;
+        internal static object GetPropertyValue(this object o, string propertyName)
+        {
+            object objValue = string.Empty;
 
-			var propertyInfo = o.GetType().GetProperty(propertyName);
+            var propertyInfo = o.GetType().GetProperty(propertyName);
 
-			if (propertyInfo != null)
+            if (propertyInfo != null)
             {
-				objValue = propertyInfo.GetValue(o, null);
-			}
+                objValue = propertyInfo.GetValue(o, null);
+            }
 
-			return objValue;
-		}
-	}
+            return objValue;
+        }
+    }
 }

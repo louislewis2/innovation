@@ -9,7 +9,7 @@
     using ApiSample.Validation;
     using ApiSample.Vendors.Commands;
 
-    public class InsertVendorAddressValidator : IValidator<InsertVendor>
+    public class InsertVendorAddressValidator : IValidator<InsertVendorCommand>
     {
         #region Fields
 
@@ -28,15 +28,23 @@
 
         #region Methods
 
-        public async Task<IValidationResult> Validate(InsertVendor command)
+        public async Task<IValidationResult> Validate(InsertVendorCommand command)
         {
             var sampleValidationResult = new SampleValidationResult();
 
-            if (command.Criteria?.Address != null)
+            if (command.Criteria == null)
+            {
+                sampleValidationResult.Add(validationResult: new ValidationResult(errorMessage: "Cannot be null", memberNames: new[] { nameof(command.Criteria) }));
+            }
+            else if (command.Criteria.Address == null)
+            {
+                sampleValidationResult.Add(validationResult: new ValidationResult(errorMessage: "Cannot be null", memberNames: new[] { nameof(command.Criteria.Address) }));
+            }
+            else
             {
                 if (command.Criteria.Address.Line1 == "111 Street")
                 {
-                    sampleValidationResult.Add(new ValidationResult(errorMessage: "Street Cannot Be 111 Street", memberNames: new[] { nameof(command.Criteria.Address.Line1) }));
+                    sampleValidationResult.Add(validationResult: new ValidationResult(errorMessage: "Street Cannot Be 111 Street", memberNames: new[] { nameof(command.Criteria.Address.Line1) }));
                 }
             }
 

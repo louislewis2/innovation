@@ -8,7 +8,7 @@
 
     using Innovation.ApiSample.Vendors.Commands;
 
-    public class InsertVendorPersistor : PersistorBase<InsertVendor>
+    public class InsertVendorPersistor : PersistorBase<InsertVendorCommand>
     {
         #region Constructor
 
@@ -22,7 +22,7 @@
 
         public override Task<ICommandResult> Persist()
         {
-            return Task.FromResult(this.ReturnSuccess(recordId: Guid.NewGuid()));
+            return Task.FromResult(result: this.ReturnSuccess(recordId: Guid.NewGuid()));
         }
 
         #endregion Methods

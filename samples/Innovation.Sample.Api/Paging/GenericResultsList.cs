@@ -6,10 +6,10 @@
     {
         #region Constructor
 
-        public GenericResultsList(T[] items, QueryPagingInfo paging)
+        public GenericResultsList(T[] items, QueryPagingInfo queryPagingInfo)
         {
             this.Items = items;
-            this.Paging = paging;
+            this.Paging = queryPagingInfo;
         }
 
         #endregion Constructor

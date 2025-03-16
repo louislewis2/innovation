@@ -38,21 +38,21 @@
         {
             this.InsertEvent(auditContext: auditContext, @event: command);
 
-            return Task.FromResult(0);
+            return Task.CompletedTask;
         }
 
         public Task Log(AuditContext auditContext, IQuery query)
         {
             this.InsertEvent(auditContext: auditContext, @event: query);
 
-            return Task.FromResult(0);
+            return Task.CompletedTask;
         }
 
         public Task Log(AuditContext auditContext, IMessage message)
         {
             this.InsertEvent(auditContext: auditContext, @event: message);
 
-            return Task.FromResult(0);
+            return Task.CompletedTask;
         }
 
         #endregion Methods
@@ -63,7 +63,7 @@
         {
             if (this.eventStream.ContainsKey(key: auditContext.CorrelationId))
             {
-                var existingEntry = this.eventStream[key: auditContext .CorrelationId];
+                var existingEntry = this.eventStream[key: auditContext.CorrelationId];
                 existingEntry.Add(item: @event);
             }
             else

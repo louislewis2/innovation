@@ -2,12 +2,12 @@
 
     <PropertyGroup>
         <Description>Contains types and interfaces that are used to interact with the dispatcher and runtime</Description>
-        <TargetFrameworks>netstandard2.0</TargetFrameworks>
+        <TargetFrameworks>net9.0</TargetFrameworks>
         <Authors>Louis Lewis</Authors>
-        <Version>3.0.0</Version>
+        <Version>4.0.0-alpha1</Version>
         <PackageTags>Innovation; CQRS</PackageTags>
         <PackageProjectUrl>https://github.com/louislewis2/innovation</PackageProjectUrl>
-        <PackageReleaseNotes>Use DotNet 7</PackageReleaseNotes>
+        <PackageReleaseNotes>Use DotNet 9</PackageReleaseNotes>
     </PropertyGroup>
 
     <ItemGroup>

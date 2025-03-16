@@ -5,7 +5,75 @@
 A simple framework which aims to provide the ability to use a CQRS pattern in your code base,
 currently with immediate consistency. It does not yet implement or try support Event Sourcing.
 
-## TODO's
+## vNext Version Objectives
+
+1. Improve Command Pipeline Performance
+1. Implement CommandResult Errors As Per RFC 7807
+1. Use ValueTask Over Task To Better Support Synchronous Operations
+1. Update To .Net 9
+1. Add Benchmarks
+
+## Tasks Remaining
+
+1. Update readme
+1. Document breaking changes
+1. Create wiki
+1. Code review
+
+## Alpha Warning
+
+Please note, at this point this is a work in progress, therefore it is considered alpha grade software.
+Changes to this code base and the api may still change.
+
+## External Dependencies
+
+1. MiniValidation by Damian Edwards [Link](https://github.com/DamianEdwards/MiniValidation). This replaces the outdated self written recursive validator
+
+# Benchmarks
+
+## .NET 9
+
+## ValuStopWatch
+
+|         Method |     Mean |    Error |   StdDev | Allocated |
+|--------------- |---------:|---------:|---------:|----------:|
+| StopWatchUsage | 28.79 ns | 0.108 ns | 0.101 ns |         - |
+
+
+## DataAnnotationsValidatorTests
+
+| Method       | Mean        | Error     | StdDev    | Ratio         | RatioSD | Gen0   | Allocated | Alloc Ratio |
+|------------- |------------:|----------:|----------:|--------------:|--------:|-------:|----------:|------------:|
+| TestCurrent  | 3,018.65 ns | 24.846 ns | 20.748 ns |      baseline |         | 0.3624 |    3808 B |             |
+| TestNew      |   969.43 ns | 13.008 ns | 10.862 ns |  3.11x faster |   0.04x | 0.1373 |    1440 B |  2.64x less |
+
+## BlankCommandDataAnnotationsValidatorTests
+
+| Method              | Mean      | Error    | StdDev   | Ratio        | RatioSD | Gen0   | Allocated | Alloc Ratio |
+|-------------------- |----------:|---------:|---------:|-------------:|--------:|-------:|----------:|------------:|
+| BlankCommandCurrent | 517.57 ns | 9.377 ns | 8.771 ns |     baseline |         | 0.1135 |    1192 B |             |
+| BlankCommandNew     |  96.64 ns | 0.674 ns | 0.563 ns | 5.36x faster |   0.09x | 0.0083 |      88 B | 13.55x less |
+
+## DispatcherCommandTests
+
+## Before
+
+|  Method |     Mean |    Error |   StdDev | Allocated |
+|-------- |---------:|---------:|---------:|----------:|
+| Command | 25.09 ms | 0.468 ms | 0.609 ms |  73.08 KB |
+
+## After
+
+| Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+|-------- |---------:|--------:|--------:|-------:|----------:|
+| Command | 283.6 ns | 3.34 ns | 2.61 ns | 0.0196 |     208 B |
+
+
+
+Old: 40 Operations per second
+New: 3 521 126 Operations per second
+
+1 second = 1 000 000 000 ns
 
 
 ## Dispatcher Command Pipeline
@@ -100,10 +168,9 @@ This Is To Support A Modular Approach.
 
 
 
-## Supported .Net Frameworks
+## Supported .Net Framework
 
-1. .Net Standard 2.0
-2. .Net 5.0
+1. .Net 9.x
 
 ## Samples
 
@@ -112,14 +179,12 @@ There are two samples. `Innovation.Sample.Console` and `Innovation.Sample.Web`
 ## Tests
 
 There is a single test project, however there are two other projects in the test directory.
-This is to ensure that the loading capability can be correctly tested.
+This is to ensure that the dynamic loading capability can be correctly tested.
 
 ## Building
 
 In order to build the solution, you will need to following items
 
-1. Visual Studio 2019 >= 16.8.3
-2. Visual Studio .Net Framework Targeting Packs and SDK's for .Net 4.5.1 through .Net 4.6.2 (See Visual Studio Installer - Modify - Individual Components)
-3. Latest .Net Core SDK [Download Link](https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-5.0.101-windows-x64-installer)
-4. Latest .Net Core Runtime [Download Link](https://dotnet.microsoft.com/download/dotnet/current/runtime)
+1. Visual Studio 2022 >= 17.12.3
+3. Latest .Net9 SDK And Runtime [Download Link](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
 

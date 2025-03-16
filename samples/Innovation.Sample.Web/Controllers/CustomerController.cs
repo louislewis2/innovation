@@ -9,55 +9,59 @@
     using Innovation.Sample.Api.Paging;
     using Innovation.Sample.Api.Customers.Queries;
     using Innovation.Sample.Api.Customers.Commands;
+    using Innovation.Sample.Api.Customers.Criteria;
     using Innovation.Sample.Api.Customers.ViewModels;
 
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class CustomerController : InnovationBaseController
     {
         #region Methods
 
         public async Task<IActionResult> Index(QueryPage queryPage)
         {
-            return this.View(await this.Query<QueryPage, GenericResultsList<CustomerLite>>(queryPage));
+            return this.View(await this.Query<QueryPage, GenericResultsList<CustomerLite>>(query: queryPage));
         }
 
-        // GET: People/Create
+        // GET: Customer/Create
         public IActionResult Create()
         {
-            var command = new CreateCustomer();
+            var createCustomerCriteria = CreateCustomerCriteria.Default();
 
-            return View(command);
+            return View(createCustomerCriteria);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateCustomer createCustomer)
+        public async Task<IActionResult> Create(CreateCustomerCriteria createCustomerCriteria)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var commandResult = await this.Command(createCustomer);
-
-                if (commandResult.Success)
-                {
-                    return RedirectToAction("Index");
-                }
-                else
-                {
-                    // TODO : Return errors from the command result
-                    return View(createCustomer);
-                }
+                return View(createCustomerCriteria);
             }
-            return View(createCustomer);
+
+            var createCustomerCommand = new CreateCustomerCommand(createCustomerCriteria: createCustomerCriteria);
+            var createCustomerCommandResult = await this.Dispatcher.Command(command: createCustomerCommand);
+
+            if (createCustomerCommandResult.Success)
+            {
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                // TODO : Return errors from the command result
+                return View(createCustomerCriteria);
+            }
         }
 
-        // GET: People/Details/5
-        public async Task<IActionResult> Details(Guid? id)
+        // GET: Customer/Details/5
+        public async Task<IActionResult> Details(Guid customerId)
         {
-            if (id == null)
+            if (customerId == default)
             {
                 return NotFound();
             }
 
-            var customer = await this.GetCustomerDetail(id.Value);
+            var customer = await this.GetCustomerDetail(customerId: customerId);
 
             if (customer == null)
             {
@@ -67,69 +71,68 @@
             return View(customer);
         }
 
-        // GET: People/Edit/5
-        public async Task<IActionResult> Edit(Guid? id)
+        // GET: Customer/Edit/5
+        public async Task<IActionResult> Edit(Guid customerId)
         {
-            if (id == null)
+            if (customerId == default)
             {
                 return NotFound();
             }
 
-            var customer = await this.GetCustomerDetail(id.Value);
+            var customer = await this.GetCustomerDetail(customerId: customerId);
 
             if (customer == null)
             {
                 return NotFound();
             }
 
-            var updateCustomer = new UpdateCustomer()
-            {
-                Id = id.Value,
-                FirstName = customer.FirstName,
-                LastName = customer.LastName,
-                Email = customer.Email,
-                Phone = customer.Phone
-            };
+            var updateCustomerCriteria = new UpdateCustomerCriteria(
+                firstName: customer.FirstName,
+                lastName: customer.LastName,
+                email: customer.Email,
+                phoneNumber: customer.PhoneNumber);
 
-            return View(updateCustomer);
+            ViewBag.customerId = customerId;
+            return View(updateCustomerCriteria);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(Guid id, UpdateCustomer updateCustomerCommand)
+        public async Task<IActionResult> Edit(Guid customerId, UpdateCustomerCriteria updateCustomerCriteria)
         {
-            if (id != updateCustomerCommand.Id)
+            if (customerId == default)
             {
                 return NotFound();
             }
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var commandResult = await this.Command(updateCustomerCommand);
-
-                if (commandResult.Success)
-                {
-                    return RedirectToAction("Index");
-                }
-                else
-                {
-                    // TODO : Return errors from the command result
-                    return View(updateCustomerCommand);
-                }
+                return View(updateCustomerCriteria);
             }
 
-            return View(updateCustomerCommand);
+            var updateCustomerCommand = new UpdateCustomerCommand(customerId: customerId, updateCustomerCriteria: updateCustomerCriteria);
+            var updateCustomerCommandResult = await this.Dispatcher.Command(command: updateCustomerCommand);
+
+            if (updateCustomerCommandResult.Success)
+            {
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                // TODO : Return errors from the command result
+                return View(updateCustomerCommand);
+            }
         }
 
-        // GET: People/Delete/5
-        public async Task<IActionResult> Delete(Guid? id)
+        // GET: Customer/Delete/5
+        public async Task<IActionResult> Delete(Guid customerId)
         {
-            if (id == null)
+            if (customerId == default)
             {
                 return NotFound();
             }
 
-            var customer = await this.GetCustomerLite(id.Value);
+            var customer = await this.GetCustomerLite(customerId: customerId);
 
             if (customer == null)
             {
@@ -139,13 +142,18 @@
             return View(customer);
         }
 
-        // POST: People/Delete/5
+        // POST: Customer/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(Guid id)
+        public async Task<IActionResult> DeleteConfirmed(Guid customerId)
         {
-            var command = new DeleteCustomer(id: id);
-            var commandResult = await this.Command(command);
+            if (customerId == default)
+            {
+                return NotFound();
+            }
+
+            var deleteCustomerCommand = new DeleteCustomerCommand(customerId: customerId);
+            var deleteCustomerCommandResult = await this.Command(command: deleteCustomerCommand);
 
             return RedirectToAction("Index");
         }
@@ -154,16 +162,16 @@
 
         #region Private Methods
 
-        private async Task<CustomerLite> GetCustomerLite(Guid id)
+        private async Task<CustomerLite> GetCustomerLite(Guid customerId)
         {
-            var getCustomer = new GetCustomer(id: id);
-            return await this.Query<GetCustomer, CustomerLite>(getCustomer);
+            var getCustomerQuery = new GetCustomerQuery(customerId: customerId);
+            return await this.Query<GetCustomerQuery, CustomerLite>(getCustomerQuery);
         }
 
-        private async Task<CustomerDetail> GetCustomerDetail(Guid id)
+        private async Task<CustomerDetail> GetCustomerDetail(Guid customerId)
         {
-            var getCustomer = new GetCustomer(id: id);
-            return await this.Query<GetCustomer, CustomerDetail>(getCustomer);
+            var getCustomerQuery = new GetCustomerQuery(customerId: customerId);
+            return await this.Query<GetCustomerQuery, CustomerDetail>(getCustomerQuery);
         }
 
         #endregion Private Methods

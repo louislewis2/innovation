@@ -6,54 +6,55 @@
     using Microsoft.Extensions.DependencyInjection;
 
     using Innovation.Api.Dispatching;
-    using Innovation.Sample.Api.Paging;
     using Innovation.Api.CommandHelpers;
+
+    using Innovation.Sample.Api.Paging;
     using Innovation.Sample.Api.Messages;
     using Innovation.Sample.Api.Customers.Queries;
     using Innovation.Sample.Api.Customers.Commands;
+    using Innovation.Sample.Api.Customers.Criteria;
     using Innovation.Sample.Api.Customers.ViewModels;
 
     class Program
     {
         #region Methods
 
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             ConfigureServices();
-            MainAsync(args).GetAwaiter().GetResult();
-        }
-
-        public static async Task MainAsync(string[] args)
-        {
             var dispatcher = ServiceProvider.GetService<IDispatcher>();
 
             // Command - Exception
-            var createFaultedCustomerCommand = new CreateCustomer();
-            var faultedResult = await dispatcher.Command(createFaultedCustomerCommand);
+            var createCustomerCriteriaInvalid = CreateCustomerCriteria.Default();
+            var createCustomerCommandInvalid = new CreateCustomerCommand(createCustomerCriteria: createCustomerCriteriaInvalid);
+            var createCustomerCommandInvalidResult = await dispatcher.Command(command: createCustomerCommandInvalid);
 
             // Command Create
-            var createCustomerCommand = new CreateCustomer();
-            createCustomerCommand.FirstName = "Louis";
-            createCustomerCommand.LastName = "Lewis";
-            createCustomerCommand.UserName = "louis@lewisonline.co.za";
+            var createCustomerCriteria = new CreateCustomerCriteria(
+                userName: "louislewis2",
+                firstName: "Louis",
+                lastName: "Lewis",
+                email: "louis@domainnotexisting.org",
+                phoneNumber: "5555555");
 
-            var createResult = await dispatcher.Command(createCustomerCommand);
-            var createdCustomerId = Guid.Parse(((CommandResult)createResult).RecordId);
+            var createCustomerCommand = new CreateCustomerCommand(createCustomerCriteria: createCustomerCriteria);
+            var createCustomerCommandResult = await dispatcher.Command(command: createCustomerCommand);
+            var createdCustomerId = Guid.Parse(((CommandResult)createCustomerCommandResult).RecordId);
 
             // Query Paged
             var queryPage = new QueryPage();
-            var queryPagedResult = await dispatcher.Query<QueryPage, GenericResultsList<CustomerLite>>(queryPage);
+            var queryPagedResult = await dispatcher.Query<QueryPage, GenericResultsList<CustomerLite>>(query: queryPage);
 
             // Query Single Lite
-            var getCustomerQuery = new GetCustomer(id: createdCustomerId);
-            var customerLite = await dispatcher.Query<GetCustomer, CustomerLite>(getCustomerQuery);
+            var getCustomerQuery = new GetCustomerQuery(customerId: createdCustomerId);
+            var customerLite = await dispatcher.Query<GetCustomerQuery, CustomerLite>(getCustomerQuery);
 
             // Query Single Detail
-            var customerDetail = await dispatcher.Query<GetCustomer, CustomerDetail>(getCustomerQuery);
+            var customerDetail = await dispatcher.Query<GetCustomerQuery, CustomerDetail>(query: getCustomerQuery);
 
             // Command Delete
-            var deleteCommand = new DeleteCustomer(id: createdCustomerId);
-            var deleteResult = await dispatcher.Command(deleteCommand);
+            var deleteCommand = new DeleteCustomerCommand(customerId: createdCustomerId);
+            var deleteResult = await dispatcher.Command(command: deleteCommand);
 
             // Message
             var exception = new NotImplementedException("Lets throw an exception");
@@ -81,7 +82,8 @@
 
             services.AddOptions();
 
-            services.AddSampleModule();
+            services.AddBaseModule();
+            services.AddDataModule();
             services.AddInnovation();
         }
 

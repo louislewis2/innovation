@@ -1,7 +1,9 @@
 ﻿namespace Innovation.Api.Messaging
 {
+    using System.Diagnostics.CodeAnalysis;
+
     public interface IAddressable
     {
-        string[] Handles { get; }
+        [DisallowNull] string[] Handles { get; }
     }
 }

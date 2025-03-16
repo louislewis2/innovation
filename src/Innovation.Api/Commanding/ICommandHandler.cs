@@ -1,6 +1,7 @@
 ﻿namespace Innovation.Api.Commanding
 {
     using System.Threading.Tasks;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// This is the interface all command handlers must implement.
@@ -12,6 +13,6 @@
         /// </summary>
         /// <param name="command"></param>
         /// <returns></returns>
-        Task<ICommandResult> Handle(TCommand command);
+        ValueTask<ICommandResult> Handle([DisallowNull] TCommand command);
     }
 }

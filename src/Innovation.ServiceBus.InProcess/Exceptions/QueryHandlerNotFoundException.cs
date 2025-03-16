@@ -14,7 +14,8 @@
 
         #region Constructor
 
-        public QueryHandlerNotFoundException(IQuery query) : base($"Query.Name: {query.EventName} - Query.Type: {query.GetType()}")
+        public QueryHandlerNotFoundException(IQuery query) 
+            : base($"Query.Name: {query.EventName} - Query.Type: {query.GetType()}")
         {
             this.query = query;
         }

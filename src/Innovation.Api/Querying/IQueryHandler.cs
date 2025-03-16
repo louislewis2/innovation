@@ -1,6 +1,7 @@
 ﻿namespace Innovation.Api.Querying
 {
     using System.Threading.Tasks;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// This interface is for query handlers.
@@ -12,6 +13,6 @@
         where TQuery : IQuery
         where TQueryResult : IQueryResult
     {
-        Task<TQueryResult> Handle(TQuery query);
+        Task<TQueryResult> Handle([DisallowNull] TQuery query);
     }
 }

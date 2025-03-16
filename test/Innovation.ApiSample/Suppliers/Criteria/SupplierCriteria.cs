@@ -33,7 +33,7 @@
             {
                 if (this.Name == "Louis")
                 {
-                    validationResults.Add(new ValidationResult("Name Cannot Be Louis"));
+                    validationResults.Add(new ValidationResult("Name Cannot Be Louis", [nameof(Name)]));
                 }
             }
 

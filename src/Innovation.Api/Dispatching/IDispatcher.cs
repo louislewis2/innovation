@@ -1,6 +1,7 @@
 ﻿namespace Innovation.Api.Dispatching
 {
     using System.Threading.Tasks;
+    using System.Diagnostics.CodeAnalysis;
 
     using Querying;
     using Messaging;
@@ -12,22 +13,16 @@
     /// </summary>
     public interface IDispatcher
     {
-        void SetCorrelationId(string correlationId);
-        void SetContext(IDispatcherContext dispatcherContext);
-        Task<ICommandResult> Command<TCommand>(TCommand command, bool suppressExceptions = true) where TCommand : ICommand;
-        Task Message<TMessage>(TMessage message) where TMessage : IMessage;
-        Task MessageFor<TMessage>(TMessage message, params string[] addresses) where TMessage : IMessage;
-        Task<TQueryResult> Query<TQuery, TQueryResult>(TQuery query)
+        void SetCorrelationId([DisallowNull] string correlationId);
+        void SetContext([DisallowNull] IDispatcherContext dispatcherContext);
+        ValueTask<ICommandResult> Command<TCommand>([DisallowNull] TCommand command, bool suppressExceptions = true) where TCommand : ICommand;
+        Task Message<TMessage>([DisallowNull] TMessage message) where TMessage : IMessage;
+        Task MessageFor<TMessage>([DisallowNull] TMessage message, params string[] addresses) where TMessage : IMessage;
+        Task<TQueryResult> Query<TQuery, TQueryResult>([DisallowNull] TQuery query)
             where TQueryResult : IQueryResult
             where TQuery : IQuery;
-        Task<TQueryResult> QueryFor<TQuery, TQueryResult>(TQuery query, params string[] addresses)
+        Task<TQueryResult> QueryFor<TQuery, TQueryResult>([DisallowNull] TQuery query, params string[] addresses)
             where TQueryResult : IQueryResult
             where TQuery : IQuery;
-
-        bool CanCommand<TCommand>(TCommand command) where TCommand : ICommand;
-        bool CanMessage<TMessage>(TMessage message) where TMessage : IMessage;
-        bool CanMessageFor<TMessage>(TMessage message, params string[] addresses) where TMessage : IMessage;
-        bool CanQuery<TQuery, TQueryResult>(TQuery query) where TQuery : IQuery where TQueryResult : IQueryResult;
-        bool CanQueryFor<TQuery, TQueryResult>(TQuery query, params string[] addresses) where TQuery : IQuery where TQueryResult : IQueryResult;
     }
 }

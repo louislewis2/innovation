@@ -2,15 +2,16 @@
 {
     using System;
     using System.Linq;
+    using System.Diagnostics;
     using System.Threading.Tasks;
-    using System.Collections.Generic;
     using Microsoft.Extensions.Logging;
-    using System.ComponentModel.DataAnnotations;
+    using Microsoft.Extensions.Options;
     using Microsoft.Extensions.DependencyInjection;
 
+    using Settings;
     using Api.Core;
-    using Exceptions;
     using Validators;
+    using Exceptions;
     using Api.Querying;
     using Api.Reactions;
     using Api.Messaging;
@@ -19,7 +20,7 @@
     using Api.Dispatching;
     using Api.Interceptors;
     using Api.CommandHelpers;
-    using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// This is the implementation of the dispatcher for the in process service bus.
@@ -29,8 +30,12 @@
         #region Fields
 
         private readonly ILogger logger;
-        private readonly IServiceProvider serviceProvider;
-        private readonly IServiceScopeFactory serviceScopeFactory;
+        private readonly InnovationOptions innovationOptions;
+        private readonly InnovationRuntime innovationRuntime;
+
+        private static readonly ICommandResult commandResultStatic = new CommandResult();
+
+        private IServiceScope serviceScope;
 
         #endregion Fields
 
@@ -38,12 +43,15 @@
 
         public Dispatcher(
             ILogger<Dispatcher> logger,
-            IServiceProvider serviceProvider,
-            IServiceScopeFactory serviceScopeFactory)
+            IServiceScopeFactory serviceScopeFactory,
+            IOptions<InnovationOptions> innovationOptionsOptions,
+            InnovationRuntime innovationRuntime)
         {
             this.logger = logger;
-            this.serviceProvider = serviceProvider;
-            this.serviceScopeFactory = serviceScopeFactory;
+            this.innovationOptions = innovationOptionsOptions.Value;
+            this.innovationRuntime = innovationRuntime;
+
+            this.serviceScope = serviceScopeFactory.CreateScope();
         }
 
         #endregion Constructor
@@ -57,7 +65,7 @@
 
         #region Methods
 
-        public void SetCorrelationId(string correlationId)
+        public void SetCorrelationId([DisallowNull] string correlationId)
         {
             if (!string.IsNullOrWhiteSpace(value: correlationId))
             {
@@ -65,267 +73,382 @@
             }
         }
 
-        public void SetContext(IDispatcherContext dispatcherContext)
+        public void SetContext([DisallowNull] IDispatcherContext dispatcherContext)
         {
             this.Context = dispatcherContext ?? throw new ArgumentNullException(paramName: nameof(dispatcherContext));
             this.Context.SetCorrelationId(correlationId: this.CorrelationId);
         }
 
-        public bool CanCommand<TCommand>(TCommand command) where TCommand : ICommand
+        public async ValueTask<ICommandResult> Command<TCommand>([DisallowNull] TCommand command, bool suppressExceptions = true) where TCommand : ICommand
         {
-            try
-            {
-                var commandHandler = this.Resolve<TCommand>();
+            /* Returning at this point with static CommandResult or even null
 
-                return commandHandler != null;
-            }
-            catch (Exception ex)
-            {
-                this.logger.LogError(ex.Message, ex);
-                return false;
-            }
-        }
+            | Method  | Mean     | Error    | StdDev   | Gen0   | Allocated |
+            |-------- |---------:|---------:|---------:|-------:|----------:|
+            | Command | 48.29 ns | 0.339 ns | 0.283 ns | 0.0038 |      40 B |
+             */
 
-        public bool CanMessage<TMessage>(TMessage message) where TMessage : IMessage
-        {
-            try
-            {
-                var handlers = this.ResolveMessageHandlers<TMessage>();
-
-                if (handlers == null || !handlers.Any())
-                {
-                    return false;
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                this.logger.LogError(ex.Message, ex);
-
-                return false;
-            }
-        }
-
-        public bool CanMessageFor<TMessage>(TMessage message, params string[] addresses) where TMessage : IMessage
-        {
-            try
-            {
-                var handlers = this.ResolveMessageHandlers<TMessage>();
-
-                var addressableHandlers = handlers.OfType<IAddressable>().Where(x => x.Handles.Intersect(addresses).Any()).Cast<IMessageHandler<TMessage>>();
-
-                if (addressableHandlers == null || !addressableHandlers.Any())
-                {
-                    return false;
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                this.logger.LogError(ex.Message, ex);
-
-                return false;
-            }
-        }
-
-        public bool CanQuery<TQuery, TQueryResult>(TQuery query) where TQuery : IQuery where TQueryResult : IQueryResult
-        {
-            try
-            {
-                var queryHandler = this.Resolve<TQuery, TQueryResult>();
-
-                return queryHandler != null;
-            }
-            catch (Exception ex)
-            {
-                this.logger.LogError(ex.Message, ex);
-
-                return false;
-            }
-        }
-
-        public bool CanQueryFor<TQuery, TQueryResult>(TQuery query, params string[] addresses) where TQuery : IQuery where TQueryResult : IQueryResult
-        {
-            try
-            {
-                var queryHandlers = this.ResolveAll<TQuery, TQueryResult>();
-
-                var addressableHandlers = queryHandlers.OfType<IAddressable>().Where(x => x.Handles.Intersect(addresses).Any()).Cast<IQueryHandler<TQuery, TQueryResult>>();
-
-                if (addressableHandlers == null || !addressableHandlers.Any())
-                {
-                    return false;
-                }
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                this.logger.LogError(ex.Message, ex);
-
-                return false;
-            }
-        }
-
-        public async Task<ICommandResult> Command<TCommand>(TCommand command, bool suppressExceptions = true) where TCommand : ICommand
-        {
-            var stopWatch = new Stopwatch();
-            stopWatch.Start();
+            var stopWatch = ValueStopwatch.StartNew();
 
             try
             {
+                /* Returning at this point with static CommandResult or even null
+
+                | Method  | Mean     | Error    | StdDev   | Gen0   | Allocated |
+                |-------- |---------:|---------:|---------:|-------:|----------:|
+                | Command | 58.64 ns | 1.028 ns | 0.912 ns | 0.0038 |      40 B |
+                 */
+
+                var commandType = command.GetType();
+
                 if (command == null)
                 {
+                    DispatcherLogging.CommandParameterNull(this.logger);
                     throw new ArgumentNullException(paramName: nameof(command));
                 }
 
-                if (command is IContextAware contextAwareCommand)
+                /* Returning at this point with static CommandResult or even null
+
+                | Method  | Mean     | Error    | StdDev   | Gen0   | Allocated |
+                |-------- |---------:|---------:|---------:|-------:|----------:|
+                | Command | 59.55 ns | 0.178 ns | 0.158 ns | 0.0038 |      40 B |
+                 */
+
+                DispatcherLogging.EnteredCommandDispatcher(
+                    logger: this.logger, 
+                    correlationId: this.CorrelationId, 
+                    commandName: command.EventName, 
+                    commandType: commandType);
+
+                DispatcherLogging.CommandDetail(logger: this.logger, command: command);
+
+                /* Returning at this point with static CommandResult or even null
+                 * 
+                | Method  | Mean     | Error    | StdDev   | Gen0   | Allocated |
+                |-------- |---------:|---------:|---------:|-------:|----------:|
+                | Command | 72.37 ns | 1.088 ns | 0.964 ns | 0.0038 |      40 B |
+                 */
+
+                var commandBitsForCommandType = this.innovationRuntime.GetCommandBits(commandType: commandType);
+
+                /* Returning at this point with static CommandResult or even null
+                 * 
+                | Method  | Mean     | Error    | StdDev   | Gen0   | Allocated |
+                |-------- |---------:|---------:|---------:|-------:|----------:|
+                | Command | 89.49 ns | 0.663 ns | 0.588 ns | 0.0038 |      40 B |
+                 */
+
+                if ((commandBitsForCommandType & (1 << (int)CommandBitTypes.CommandHandlerRegistered)) <= 0)
                 {
-                    if (this.Context == null)
+                    // TODO: Ensure the runtime logs this as an error
+                    // The runtime should check and ensure all commands have handlers registered
+                    DispatcherLogging.CommandHandlerNotFound(logger: this.logger, eventName: command.EventName, commandType: commandType);
+
+                    throw new CommandHandlerNotFoundException(command: command);
+                }
+
+                /* Returning at this point with static CommandResult or even null
+                 * 
+                | Method  | Mean     | Error    | StdDev   | Gen0   | Allocated |
+                |-------- |---------:|---------:|---------:|-------:|----------:|
+                | Command | 90.50 ns | 1.450 ns | 1.356 ns | 0.0038 |      40 B |
+                 */
+
+                if (this.Context == null)
+                {
+                    DispatcherLogging.ContextNotSet(
+                        logger: this.logger,
+                        commandName: command.EventName,
+                        correlationId: this.CorrelationId,
+                        commandType: commandType);
+                }
+                else
+                {
+
+                    if ((commandBitsForCommandType & (1 << (int)CommandBitTypes.ContextAware)) != 0)
                     {
-                        this.logger.LogWarning(1, "Command {CommandName} Is Context Aware, Context Was Not Set.{correlationId} - {CommandType}", command.EventName, this.CorrelationId, command.GetType());
-                    }
-                    else
-                    {
+                        var contextAwareCommand = command as IContextAware;
                         contextAwareCommand.SetContext(dispatcherContext: this.Context);
                     }
                 }
 
-                var auditStore = this.serviceProvider.GetService<IAuditStore>();
+                /* Returning at this point with static CommandResult or even null
+                 * 
+                | Method  | Mean     | Error    | StdDev   | Gen0   | Allocated |
+                |-------- |---------:|---------:|---------:|-------:|----------:|
+                | Command | 91.99 ns | 0.883 ns | 0.738 ns | 0.0038 |      40 B |
+                 */
 
-                if (auditStore != null)
-                {
-                    this.logger.LogDebug("Audit Store Found - {AuditStoreType}", auditStore.GetType());
-                }
+                var commandHandler = this.serviceScope.ServiceProvider.GetService<ICommandHandler<TCommand>>();
 
-                this.logger.LogDebug(1, "Entered Command Dispatcher. {correlationId} - {CommandName} - {CommandType}", this.CorrelationId, command.EventName, command.GetType());
-                this.logger.LogTrace("Command Details {@Command}", command);
+                /* Returning at this point with static CommandResult or even null
+                 * 
+                | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                |-------- |---------:|--------:|--------:|-------:|----------:|
+                | Command | 114.2 ns | 1.08 ns | 0.90 ns | 0.0060 |      64 B | <----------------------- 24 Bytes Increase
+                 */
 
-                ICommandResult result = null;
-
-                var commandHandler = this.Resolve<TCommand>();
-                var commandReactors = this.ResolveCommandReactors<TCommand>();
-                var commandInterceptors = this.ResolveCommandInterceptors<TCommand>();
-                var commandResultReactors = this.ResolveCommandResultReactors<TCommand>();
-                var commandValidators = this.ResolveCommandValidators<TCommand>();
-
+                // Just because there is a command handler has been registered, it does not mean we can get an instance.
+                // If it is missing dependencies for example, it cannot be instantiated, though this normally throws an error
+                // lets not make assumptions and be safe
                 if (commandHandler == null)
                 {
-                    this.logger.LogError("Command Handler Not Found - {CommandName} - {CommandType}", command.EventName, command.GetType());
+                    DispatcherLogging.CommandHandlerNotFound(logger: this.logger, eventName: command.EventName, commandType: commandType);
 
-                    throw new CommandHandlerNotFoundException(command);
+                    throw new CommandHandlerNotFoundException(command: command);
                 }
 
-                this.logger.LogDebug(1, "Found Handler - {HandlerType}", commandHandler.GetType());
+                /* Returning at this point with static CommandResult or even null
+                 * 
+                | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                |-------- |---------:|--------:|--------:|-------:|----------:|
+                | Command | 111.6 ns | 1.32 ns | 1.24 ns | 0.0061 |      64 B |
+                 */
 
-                if (commandHandler is ICorrelationAware correlationAwareCommand)
+                DispatcherLogging.CommandHandlerFound(logger: this.logger, commandHandler.GetType());
+
+                if ((commandBitsForCommandType & (1 << (int)CommandBitTypes.CorrelationIdAware)) != 0)
                 {
+                    var correlationAwareCommand = command as ICorrelationAware;
                     correlationAwareCommand.CorrelationId = this.CorrelationId;
                 }
 
-                if (commandValidators != null)
+                /* Returning at this point with static CommandResult or even null
+                 * 
+                | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                |-------- |---------:|--------:|--------:|-------:|----------:|
+                | Command | 111.6 ns | 1.32 ns | 1.24 ns | 0.0061 |      64 B |
+                 */
+
+                // If the command has reactors registered, process them
+                if ((commandBitsForCommandType & (1 << (int)CommandBitTypes.CommandReactor)) != 0)
                 {
-                    this.logger.LogDebug(1, "Found {CommandResultValidatorCount} Command Validators", commandValidators.Length);
-                }
+                    var commandReactors = this.ResolveCommandReactors<TCommand>();
 
-                if (commandResultReactors != null)
-                {
-                    this.logger.LogDebug(1, "Found {CommandResultReactorCount} Command Result Reactors", commandResultReactors.Length);
-                }
-
-                if (commandReactors != null)
-                {
-                    this.logger.LogDebug(1, "Found {CommandReactorCount} Command Reactors", commandReactors.Length);
-                }
-
-                _ = Task.Run(() =>
-                {
-                    this.logger.LogDebug(1, "Notifying Command Reactors");
-
-                    this.NotifyCommandReactors(commandReactors, command);
-                });
-
-                if (commandInterceptors != null)
-                {
-                    this.logger.LogDebug(1, "Found {CommandInterceptorCount} Command Interceptors", commandInterceptors.Length);
-
-                    foreach (var commandInterceptor in commandInterceptors)
+                    if (commandReactors != null)
                     {
-                        // Using this nested try / catch block to avoid interceptor exceptions breaking the pipeline
-                        try
-                        {
-                            this.logger.LogDebug($"The Command Interceptor: {commandInterceptor.GetType()} Is About To Get Run");
+                        DispatcherLogging.CommandReactorsFound(logger: this.logger, commandReactorCount: commandReactors.Length);
+                    }
 
-                            await commandInterceptor.Intercept(command);
-                        }
-                        catch (Exception ex)
+                    if (commandReactors.Length > 0)
+                    {
+                        _ = Task.Run(() =>
                         {
-                            this.logger.LogDebug($"The Command Interceptor: {commandInterceptor.GetType()} Raised An Exception");
-                            this.logger.LogError(ex.Message, ex);
-                        }
+                            DispatcherLogging.NotifyingCommandReactors(logger: this.logger);
+
+                            this.NotifyCommandReactors(commandReactors: commandReactors, command: command);
+                        });
                     }
                 }
 
-                var validationResults = new List<ValidationResult>();
-                var dataAnnotationsValidator = new DataAnnotationsValidator(serviceProvider: this.serviceProvider);
+                /* Returning at this point with static CommandResult or even null
+                 * 
+                | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                |-------- |---------:|--------:|--------:|-------:|----------:|
+                | Command | 116.1 ns | 1.45 ns | 1.29 ns | 0.0061 |      64 B |
+                 */
 
-                var validationPassed = dataAnnotationsValidator.TryValidateObjectRecursive(obj: command, validationResults);
-
-                this.logger.LogDebug(1, "Command {CommandName} Initial Validation Result: {Status}", command.EventName, validationPassed);
-
-                if (!validationPassed && validationResults.Count > 0)
+                // If the command has interceptor registered, process them
+                if ((commandBitsForCommandType & (1 << (int)CommandBitTypes.CommandInterceptor)) != 0)
                 {
-                    result = new CommandResult();
-                    result.As<CommandResult>().Fail(validationResults);
-                }
+                    var commandInterceptors = this.ResolveCommandInterceptors<TCommand>();
 
-                IValidationResult validationResult = null;
-
-                if (validationPassed)
-                {
-                    if (commandValidators != null && commandValidators?.Length > 0)
+                    if (commandInterceptors != null && commandInterceptors.Length > 0)
                     {
-                        foreach (var commandValidator in commandValidators)
+                        DispatcherLogging.CommandInterceptorsFound(logger: this.logger, commandInterceptorCount: commandInterceptors.Length);
+
+                        foreach (var commandInterceptor in commandInterceptors)
                         {
-                            var intermediateValidationResult = await commandValidator.Validate(command);
-
-                            if (!intermediateValidationResult.Success)
+                            // Using this nested try / catch block to avoid interceptor exceptions breaking the pipeline
+                            try
                             {
-                                validationResult = intermediateValidationResult;
+                                DispatcherLogging.CommandInterceptorGoingToRun(logger: this.logger, commandInterceptorType: commandInterceptor.GetType());
 
-                                break;
+                                await commandInterceptor.Intercept(command: command);
+                            }
+                            catch (Exception ex)
+                            {
+                                DispatcherLogging.CommandInterceptorRaisedException(logger: this.logger, commandInterceptorType: commandInterceptor.GetType());
+                                this.logger.LogError(exception: ex, message: ex.GetInnerMostMessage());
                             }
                         }
                     }
                 }
 
-                var finalResult = validationResult ?? (result == null ? await commandHandler.Handle(command) : result.Success ? await commandHandler.Handle(command) : result);
+                /* Returning at this point with static CommandResult or even null
+                 * 
+                | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                |-------- |---------:|--------:|--------:|-------:|----------:|
+                | Command | 114.7 ns | 2.26 ns | 2.12 ns | 0.0061 |      64 B |
+                 */
 
-                this.logger.LogDebug(1, "Notifying Command Result Reactors");
+                ICommandResult commandResult = null;
+                IValidationResult validationResult = null;
 
-                _ = Task.Run(() =>
+                /* Returning at this point with static CommandResult or even null
+                 * 
+                | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                |-------- |---------:|--------:|--------:|-------:|----------:|
+                | Command | 109.3 ns | 2.18 ns | 2.42 ns | 0.0061 |      64 B |
+                 */
+
+                if ((commandBitsForCommandType & (1 << (int)CommandBitTypes.IsValidationEnabled)) != 0)
                 {
-                    this.logger.LogDebug(1, "Notifying Command Reactors");
+                    /* Returning at this point with static CommandResult or even null
+                     * 
+                    | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                    |-------- |---------:|--------:|--------:|-------:|----------:|
+                    | Command | 115.1 ns | 1.91 ns | 1.60 ns | 0.0083 |      88 B |<---------------------- 24 Bytes allocated here
+                     */
 
-                    this.NotifyCommandResultReactors(commandResultReactors, command, finalResult);
-                });
+                    var dataAnnotationsValidator = new DataAnnotationsValidator(serviceProvider: this.serviceScope.ServiceProvider);
 
-                this.logger.LogDebug(1, "Returning From Dispatcher {FinalResult}", finalResult);
+                    /* Returning at this point with static CommandResult or even null
+                     * 
+                    | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                    |-------- |---------:|--------:|--------:|-------:|----------:|
+                    | Command | 118.0 ns | 2.36 ns | 2.21 ns | 0.0083 |      88 B |
+                     */
 
-                stopWatch.Stop();
+                    var validatorResult = await dataAnnotationsValidator.TryValidateObjectRecursive(target: command);
 
-                if (auditStore != null)
-                {
-                    await auditStore.Log(auditContext: new AuditContext(correlationId: this.CorrelationId, runtimeMilliSeconds: stopWatch.ElapsedMilliseconds), command: command, commandResult: finalResult);
+                    /* Returning at this point with static CommandResult or even null
+                     * 
+                    | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                    |-------- |---------:|--------:|--------:|-------:|----------:|
+                    | Command | 222.0 ns | 1.86 ns | 1.55 ns | 0.0167 |     176 B |<---------------------- 88 Bytes allocated here
+                     */
+
+                    DispatcherLogging.CommandInitialValidationResult(logger: this.logger, eventName: command.EventName, isValid: validatorResult.isValid);
+
+                    if (!validatorResult.isValid && validatorResult.Errors?.Count > 0)
+                    {
+                        commandResult = new CommandResult(errors: validatorResult.Errors);
+                    }
+
+                    /* Returning at this point with static CommandResult or even null
+                     * 
+                    | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                    |-------- |---------:|--------:|--------:|-------:|----------:|
+                    | Command | 226.5 ns | 2.49 ns | 2.08 ns | 0.0167 |     176 B |
+                     */
+
+                    if (validatorResult.isValid)
+                    {
+                        // If the command has validators registered, process them
+                        if ((commandBitsForCommandType & (1 << (int)CommandBitTypes.CommandValidator)) != 0)
+                        {
+                            var commandValidators = this.ResolveCommandValidators<TCommand>();
+
+                            if (commandValidators != null)
+                            {
+                                DispatcherLogging.CommandValidatorsFound(logger: this.logger, commandValidatorCount: commandValidators.Length);
+                            }
+
+                            if (commandValidators != null && commandValidators.Length > 0)
+                            {
+                                foreach (var commandValidator in commandValidators)
+                                {
+                                    var intermediateValidationResult = await commandValidator.Validate(command: command);
+
+                                    if (!intermediateValidationResult.Success)
+                                    {
+                                        validationResult = intermediateValidationResult;
+
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        /* Returning at this point with static CommandResult or even null
+                         * 
+                        | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                        |-------- |---------:|--------:|--------:|-------:|----------:|
+                        | Command | 220.3 ns | 1.28 ns | 1.07 ns | 0.0167 |     176 B |
+                         */
+                    }
                 }
+
+                var finalResult = validationResult ?? (commandResult == null ? await commandHandler.Handle(command: command) : commandResult.Success ? await commandHandler.Handle(command: command) : commandResult);
+
+                /* Returning at this point with static CommandResult or even null
+                 * 
+                | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                |-------- |---------:|--------:|--------:|-------:|----------:|
+                | Command | 239.3 ns | 2.00 ns | 1.67 ns | 0.0167 |     176 B |
+                 */
+
+                // If the command has result reactors registered, process them
+                if ((commandBitsForCommandType & (1 << (int)CommandBitTypes.CommandResultReactor)) != 0)
+                {
+                    var commandResultReactors = this.ResolveCommandResultReactors<TCommand>();
+
+                    if (commandResultReactors != null)
+                    {
+                        DispatcherLogging.CommandResultReactorsFound(logger: this.logger, commandResultReactorCount: commandResultReactors.Length);
+                    }
+
+                    if (commandResultReactors.Length > 0)
+                    {
+                        _ = Task.Run(() =>
+                        {
+                            DispatcherLogging.NotifyingCommandResultReactors(logger: this.logger);
+
+                            this.NotifyCommandResultReactors(commandResultReactors: commandResultReactors, command: command, commandResult: finalResult);
+                        });
+                    }
+                }
+
+                /* Returning at this point with static CommandResult or even null
+                 * 
+                | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                |-------- |---------:|--------:|--------:|-------:|----------:|
+                | Command | 227.7 ns | 0.79 ns | 0.66 ns | 0.0167 |     176 B |
+                 */
+
+                DispatcherLogging.ReturningFromDispatcher(this.logger, finalResult.Success);
+
+                if (this.innovationRuntime.HasAuditStoreRegistered)
+                {
+                    var auditStore = this.serviceScope.ServiceProvider.GetService<IAuditStore>();
+
+                    /* Returning at this point with static CommandResult or even null
+                     * 
+                    | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                    |-------- |---------:|--------:|--------:|-------:|----------:|
+                    | Command | 251.7 ns | 1.39 ns | 1.23 ns | 0.0167 |     176 B |
+                     */
+
+                    if (auditStore != null)
+                    {
+                        DispatcherLogging.AuditStoreFound(logger: this.logger, auditStoreType: auditStore.GetType());
+                        await auditStore.Log(
+                            auditContext: new AuditContext(correlationId: this.CorrelationId, runtimeMilliSeconds: (long)stopWatch.GetElapsedTime().TotalMilliseconds),
+                            command: command,
+                            commandResult: finalResult);
+
+                        /* Returning at this point with static CommandResult or even null
+                         * 
+                        | Method  | Mean     | Error   | StdDev   | Gen0   | Allocated |
+                        |-------- |---------:|--------:|---------:|-------:|----------:|
+                        | Command | 332.1 ns | 6.52 ns | 10.15 ns | 0.0196 |     208 B |<---------------------- 32 Bytes allocated here
+                         */
+                    }
+                }
+
+                /* Returning at this point with static CommandResult or even null
+                 * 
+                | Method  | Mean     | Error   | StdDev  | Gen0   | Allocated |
+                |-------- |---------:|--------:|--------:|-------:|----------:|
+                | Command | 330.7 ns | 6.44 ns | 6.61 ns | 0.0196 |     208 B |
+                 */
 
                 return finalResult;
             }
             catch (Exception ex)
             {
-                this.logger.LogError(ex.Message, ex);
+                this.logger.LogError(exception: ex, message: ex.GetInnerMostMessage());
 
                 if (suppressExceptions)
                 {
@@ -338,14 +461,14 @@
             }
         }
 
-        public async Task Message<TMessage>(TMessage message) where TMessage : IMessage
+        public async Task Message<TMessage>([DisallowNull] TMessage message) where TMessage : IMessage
         {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
             this.logger.LogDebug(2, "Entered Message Dispatcher. {correlationId}", this.CorrelationId);
 
-            var auditStore = this.serviceProvider.GetService<IAuditStore>();
+            var auditStore = this.serviceScope.ServiceProvider.GetService<IAuditStore>();
 
             if (auditStore != null)
             {
@@ -365,14 +488,14 @@
             }
         }
 
-        public async Task MessageFor<TMessage>(TMessage message, params string[] addresses) where TMessage : IMessage
+        public async Task MessageFor<TMessage>([DisallowNull] TMessage message, [DisallowNull] params string[] addresses) where TMessage : IMessage
         {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
             this.logger.LogDebug(2, "Entered MessageFor Dispatcher. {correlationId}", this.CorrelationId);
 
-            var auditStore = this.serviceProvider.GetService<IAuditStore>();
+            var auditStore = this.serviceScope.ServiceProvider.GetService<IAuditStore>();
 
             if (auditStore != null)
             {
@@ -400,14 +523,14 @@
             }
         }
 
-        public async Task<TQueryResult> Query<TQuery, TQueryResult>(TQuery query) where TQuery : IQuery where TQueryResult : IQueryResult
+        public async Task<TQueryResult> Query<TQuery, TQueryResult>([DisallowNull] TQuery query) where TQuery : IQuery where TQueryResult : IQueryResult
         {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 
             try
             {
-                var auditStore = this.serviceProvider.GetService<IAuditStore>();
+                var auditStore = this.serviceScope.ServiceProvider.GetService<IAuditStore>();
 
                 if (auditStore != null)
                 {
@@ -460,7 +583,7 @@
             }
         }
 
-        public async Task<TQueryResult> QueryFor<TQuery, TQueryResult>(TQuery query, params string[] addresses) where TQuery : IQuery where TQueryResult : IQueryResult
+        public async Task<TQueryResult> QueryFor<TQuery, TQueryResult>([DisallowNull] TQuery query, [DisallowNull] params string[] addresses) where TQuery : IQuery where TQueryResult : IQueryResult
         {
             var stopWatch = new Stopwatch();
             stopWatch.Start();
@@ -469,7 +592,7 @@
             {
                 this.logger.LogDebug(3, "Entered Query Dispatcher. {correlationId}", this.CorrelationId);
 
-                var auditStore = this.serviceProvider.GetService<IAuditStore>();
+                var auditStore = this.serviceScope.ServiceProvider.GetService<IAuditStore>();
 
                 if (auditStore != null)
                 {
@@ -511,7 +634,7 @@
 
         #region Private Methods
 
-        private void NotifyCommandReactors<TCommand>(ICommandReactor<TCommand>[] commandReactors, TCommand command) where TCommand : ICommand
+        private void NotifyCommandReactors<TCommand>([DisallowNull] ICommandReactor<TCommand>[] commandReactors, [DisallowNull] TCommand command) where TCommand : ICommand
         {
             this.logger.LogDebug(4, "Entered NotifyCommandReactors. {correlationId}", this.CorrelationId);
 
@@ -532,7 +655,7 @@
             }
         }
 
-        private void NotifyCommandResultReactors<TCommand, TCommandResult>(ICommandResultReactor<TCommand>[] commandResultReactors, TCommand command, TCommandResult commandResult)
+        private void NotifyCommandResultReactors<TCommand, TCommandResult>([DisallowNull] ICommandResultReactor<TCommand>[] commandResultReactors, [DisallowNull] TCommand command, [DisallowNull] TCommandResult commandResult)
             where TCommand : ICommand
             where TCommandResult : ICommandResult
         {
@@ -549,59 +672,50 @@
                     }
                     catch (Exception ex)
                     {
-                        this.logger.LogError(5, "Error Occurred NotifyCommandResultReactors. {correlationId}", this.CorrelationId, ex);
+                        this.logger.LogError(5, "Error Occurred NotifyCommandResultReactors. {correlationId} {exceptionMessage }", this.CorrelationId, ex.Message);
                     }
                 });
             }
         }
 
-        private ICommandResult CreateFromException(Exception ex)
+        private ICommandResult CreateFromException([DisallowNull] Exception ex)
         {
-            var exceptionResult = new CommandExceptionResult(ex.Message, ex);
+            var exceptionResult = new CommandExceptionResult(message: ex.Message, exception: ex);
 
             return exceptionResult;
         }
 
-        private ICommandHandler<TCommand> Resolve<TCommand>() where TCommand : ICommand
-        {
-            var commandHandler = this.serviceProvider.GetService<ICommandHandler<TCommand>>();
-
-            return commandHandler;
-        }
-
         private ICommandReactor<TCommand>[] ResolveCommandReactors<TCommand>() where TCommand : ICommand
         {
-            var scope = this.serviceScopeFactory.CreateScope();
-            var commandReactors = scope.ServiceProvider.GetServices<ICommandReactor<TCommand>>();
+            var commandReactors = this.serviceScope.ServiceProvider.GetServices<ICommandReactor<TCommand>>();
 
             return commandReactors.ToArray();
         }
 
         private ICommandInterceptor<TCommand>[] ResolveCommandInterceptors<TCommand>() where TCommand : ICommand
         {
-            var commandInterceptors = this.serviceProvider.GetServices<ICommandInterceptor<TCommand>>();
+            var commandInterceptors = this.serviceScope.ServiceProvider.GetServices<ICommandInterceptor<TCommand>>();
 
             return commandInterceptors.ToArray();
         }
 
         private ICommandResultReactor<TCommand>[] ResolveCommandResultReactors<TCommand>() where TCommand : ICommand
         {
-            var scope = this.serviceScopeFactory.CreateScope();
-            var commandResultReactors = scope.ServiceProvider.GetServices<ICommandResultReactor<TCommand>>();
+            var commandResultReactors = this.serviceScope.ServiceProvider.GetServices<ICommandResultReactor<TCommand>>();
 
             return commandResultReactors.ToArray();
         }
 
         private IMessageHandler<TMessage>[] ResolveMessageHandlers<TMessage>() where TMessage : IMessage
         {
-            var commandHandlers = this.serviceProvider.GetServices<IMessageHandler<TMessage>>();
+            var commandHandlers = this.serviceScope.ServiceProvider.GetServices<IMessageHandler<TMessage>>();
 
             return commandHandlers.ToArray();
         }
 
         private IValidator<TCommand>[] ResolveCommandValidators<TCommand>() where TCommand : ICommand
         {
-            var commandValidators = this.serviceProvider.GetServices<IValidator<TCommand>>();
+            var commandValidators = this.serviceScope.ServiceProvider.GetServices<IValidator<TCommand>>();
 
             return commandValidators.ToArray();
         }
@@ -610,7 +724,7 @@
             where TQuery : IQuery
             where TQueryResult : IQueryResult
         {
-            var queryHandler = this.serviceProvider.GetService<IQueryHandler<TQuery, TQueryResult>>();
+            var queryHandler = this.serviceScope.ServiceProvider.GetService<IQueryHandler<TQuery, TQueryResult>>();
 
             return queryHandler;
         }
@@ -619,7 +733,7 @@
             where TQuery : IQuery
             where TQueryResult : IQueryResult
         {
-            var queryHandler = this.serviceProvider.GetServices<IQueryHandler<TQuery, TQueryResult>>();
+            var queryHandler = this.serviceScope.ServiceProvider.GetServices<IQueryHandler<TQuery, TQueryResult>>();
 
             return queryHandler.ToArray();
         }

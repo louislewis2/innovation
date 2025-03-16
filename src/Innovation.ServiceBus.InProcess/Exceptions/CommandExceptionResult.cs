@@ -1,6 +1,7 @@
 ﻿namespace Innovation.ServiceBus.InProcess.Exceptions
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     using Innovation.Api.Commanding;
 
@@ -8,13 +9,13 @@
     {
         #region Constructor
 
-        public CommandExceptionResult(string message, Exception exception = null)
+        public CommandExceptionResult([DisallowNull] string message, [DisallowNull] Exception exception = null)
         {
             this.Message = message;
             this.Exception = exception;
         }
 
-        public CommandExceptionResult(Exception exception)
+        public CommandExceptionResult([DisallowNull] Exception exception)
         {
             this.Message = exception.Message;
             this.Exception = exception;
@@ -25,9 +26,7 @@
         #region Properties
 
         public bool Success => false;
-
         public string Message { get; }
-
         public Exception Exception { get; }
 
         #endregion Properties

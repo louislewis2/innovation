@@ -20,10 +20,9 @@
 
         #region Constructor
 
-        public PersistorBase(ILogger logger)
+        public PersistorBase(ILogger<PersistorBase<T>> logger)
         {
             this.logger = logger;
-
             this.commandResult = new CommandResult();
         }
 
@@ -31,7 +30,7 @@
 
         #region Methods
 
-        public async Task<ICommandResult> Handle(T command)
+        public async ValueTask<ICommandResult> Handle(T command)
         {
             try
             {
@@ -41,7 +40,7 @@
             }
             catch(Exception ex)
             {
-                this.logger.LogError(message: ex.Message, args: ex);
+                this.logger.LogError(exception: ex, message: ex.GetInnerMostMessage());
                 this.commandResult.Fail(ex: ex);
 
                 return this.commandResult;

@@ -1,15 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-	<PropertyGroup>
-		<TargetFramework>net7.0</TargetFramework>
-	</PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>CS1591</NoWarn>
+    </PropertyGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\..\src\Innovation.Api\Innovation.Api.csproj" />
-		<ProjectReference Include="..\Innovation.Sample.Api\Innovation.Sample.Api.csproj" />
-		<ProjectReference Include="..\Innovation.Sample.Data\Innovation.Sample.Data.csproj" />
-		<ProjectReference Include="..\..\src\Innovation.ServiceBus.InProcess\Innovation.ServiceBus.InProcess.csproj" />
-		<ProjectReference Include="..\..\src\Innovation.Integration.AspNetCore\Innovation.Integration.AspNetCore.csproj" />
-	</ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Innovation.Api\Innovation.Api.csproj" />
+        <ProjectReference Include="..\Innovation.Sample.Api\Innovation.Sample.Api.csproj" />
+        <ProjectReference Include="..\Innovation.Sample.BaseModule\Innovation.Sample.BaseModule.csproj" />
+        <ProjectReference Include="..\Innovation.Sample.Data\Innovation.Sample.Data.csproj" />
+        <ProjectReference Include="..\..\src\Innovation.ServiceBus.InProcess\Innovation.ServiceBus.InProcess.csproj" />
+        <ProjectReference Include="..\..\src\Innovation.Integration.AspNetCore\Innovation.Integration.AspNetCore.csproj" />
+        <ProjectReference Include="..\Innovation.Sample.Infrastructure\Innovation.Sample.Infrastructure.csproj" />
+    </ItemGroup>
 
 </Project>

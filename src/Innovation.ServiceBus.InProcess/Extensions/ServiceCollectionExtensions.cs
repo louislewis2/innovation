@@ -23,27 +23,20 @@
 
         /// <summary>
         /// This Will Add All The Required Innovation Components
-        /// It Also Will Expose An Action For Registering Search Locations.
-        /// Search locations can contain dll's which will be dynamically loaded and processed
-        /// </summary>
-        /// <example>
-        /// services.AddInnovation(searchLocationsOptions: (searchLocationsOptions) =>
-        /// {
-        ///   searchLocationsOptions.Locations = new List<string> { "/modules" };
-        /// });
-        /// </example>
-        public static void AddInnovation(this IServiceCollection serviceCollection, Action<SearchLocations> searchLocationsOptions)
-        {
-            serviceCollection.Configure(searchLocationsOptions);
-            serviceCollection.AddInnovation();
-        }
-
-        /// <summary>
-        /// This Will Add All The Required Innovation Components
         /// </summary>
         /// <example>services.AddInnovation();</example>
         public static void AddInnovation(this IServiceCollection serviceCollection)
         {
+            serviceCollection.AddInnovation(innovationOptions => { innovationOptions.IsValidationEnabled = true; });
+        }
+
+        /// <summary>
+        /// This Will Add All The Required Innovation Components and register options
+        /// </summary>
+        /// <example>services.AddInnovation();</example>
+        public static void AddInnovation(this IServiceCollection serviceCollection, Action<InnovationOptions> innovationOptions)
+        {
+            serviceCollection.Configure(innovationOptions);
             var provider = serviceCollection.BuildServiceProvider();
 
             var runtime = ActivatorUtilities.CreateInstance<InnovationRuntime>(provider, serviceCollection);

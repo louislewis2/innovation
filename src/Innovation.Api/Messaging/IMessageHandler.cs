@@ -1,6 +1,7 @@
 ﻿namespace Innovation.Api.Messaging
 {
     using System.Threading.Tasks;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// This is the interface all message handlers must implement.
@@ -12,6 +13,6 @@
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        Task Handle(TMessage message);
+        Task Handle([DisallowNull] TMessage message);
     }
 }

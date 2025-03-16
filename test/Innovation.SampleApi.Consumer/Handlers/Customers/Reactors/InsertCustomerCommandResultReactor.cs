@@ -9,8 +9,9 @@
 
     using Innovation.ApiSample.Customers.Commands;
     using Microsoft.Extensions.DependencyInjection;
+    using Innovation.Api.Messaging;
 
-    public class InsertCustomerCommandResultReactor : ICommandResultReactor<InsertCustomer>
+    public class InsertCustomerCommandResultReactor : ICommandResultReactor<InsertCustomerCommand>
     {
         #region Fields
 
@@ -31,7 +32,7 @@
 
         #region Methods
 
-        public Task React(ICommandResult commandResult, InsertCustomer command)
+        public Task React(ICommandResult commandResult, InsertCustomerCommand command)
         {
             try
             {
@@ -42,10 +43,10 @@
             }
             catch (Exception ex)
             {
-                this.logger.LogError(message: ex.Message, args: ex);
+                this.logger.LogError(exception: ex, message: ex.GetInnerMostMessage());
             }
 
-            return Task.FromResult(0);
+            return Task.CompletedTask;
         }
 
         #endregion Methods

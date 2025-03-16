@@ -27,7 +27,7 @@
 
         public void Add(ValidationResult validationResult)
         {
-            if(this.Errors == null)
+            if (this.Errors == null)
             {
                 this.Success = false;
                 this.Errors = new List<ValidationResult>();

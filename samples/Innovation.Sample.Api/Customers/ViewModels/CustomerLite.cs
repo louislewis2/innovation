@@ -10,16 +10,25 @@
 
         public CustomerLite(Guid id, string fullName)
         {
-            Id = id;
-            FullName = fullName;
+            this.Id = id;
+            this.FullName = fullName;
         }
 
         #endregion Constructor
 
         #region Properties
 
-        public Guid Id { get; private set; }
-        public string FullName { get; private set; }
+        /// <summary>
+        /// The unigue identifer for this customer.
+        /// It is also referred to customerId in other api calls
+        /// </summary>
+        public Guid Id { get; }
+
+        /// <summary>
+        /// asdsad
+        /// </summary>
+        /// <example>Louis Lewis</example>
+        public string FullName { get; }
 
         #endregion Properties
     }
