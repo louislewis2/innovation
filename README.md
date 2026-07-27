@@ -110,7 +110,7 @@ This Is To Support A Modular Approach.
 ## Supported .Net Frameworks
 
 1. .Net Standard 2.0
-2. .Net 5.0
+2. .Net 9.0
 
 ## Samples
 
@@ -125,8 +125,7 @@ This is to ensure that the loading capability can be correctly tested.
 
 In order to build the solution, you will need to following items
 
-1. Visual Studio 2019 >= 16.8.3
-2. Visual Studio .Net Framework Targeting Packs and SDK's for .Net 4.5.1 through .Net 4.6.2 (See Visual Studio Installer - Modify - Individual Components)
-3. Latest .Net Core SDK [Download Link](https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-5.0.101-windows-x64-installer)
-4. Latest .Net Core Runtime [Download Link](https://dotnet.microsoft.com/download/dotnet/current/runtime)
+1. Visual Studio 2022 >= 17.14.37
+2. Latest .Net Core SDK [Download Link](https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-5.0.101-windows-x64-installer)
+3. Latest .Net Core Runtime [Download Link](https://dotnet.microsoft.com/download/dotnet/current/runtime)
 
