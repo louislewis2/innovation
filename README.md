@@ -3,17 +3,17 @@
 ## CQRS
 
 A simple framework which aims to provide the ability to use a CQRS pattern in your code base,
-currently with immediate consistency. It does not yet implement or try support Event Sourcing.
+currently with immediate consistency. It does not implement or try support Event Sourcing.
 
 # New Version Incomming
 
 A new version of this library being worked on actively.
-Primarily focusing on performance improvments.
+Primarily focusing on performance improvments. Due to the nature of the changes, a new seperate implementation will be created, and the current implementation will be left as is. 
+Both implementations will be maintained, but the new implementation will be the focus of future development.
 
-checkout the vNExt branch
+The new implementation will be called Innovation-vNext, and will be available in a seperate repository. 
 
-## TODO's
-
+[Innovation-vNext](https://github.com/louislewis2/innovation-vnext)
 
 ## Dispatcher Command Pipeline
 
@@ -129,3 +129,29 @@ In order to build the solution, you will need to following items
 2. Latest .Net Core SDK [Download Link](https://dotnet.microsoft.com/download/dotnet/thank-you/sdk-5.0.101-windows-x64-installer)
 3. Latest .Net Core Runtime [Download Link](https://dotnet.microsoft.com/download/dotnet/current/runtime)
 
+## Benchmark Results
+
+1 second = 1 000 ms (milliseconds)
+1 second = 1 000 000 us (microseconds)
+1 second = 1 000 000 000 ns (nanoseconds)
+
+### A benchmark class to test the performance of the DataAnnotationsValidator with a BlankCommand.
+| Method          | Mean     | Error   | StdDev  | Gen0   | Allocated |
+|---------------- |---------:|--------:|--------:|-------:|----------:|
+| BlankCommandNew | 460.1 ns | 6.35 ns | 5.63 ns | 0.1044 |   1.07 KB |
+
+Operations per second: 1 000 000 000 / 460.1 = 2 173 440
+
+### A benchmark class to test the performance of the DataAnnotationsValidator with a specific command object (InsertCustomer).
+| Method                | Mean     | Error     | StdDev    | Gen0   | Allocated |
+|---------------------- |---------:|----------:|----------:|-------:|----------:|
+| InsertCustomerCommand | 2.478 us | 0.0166 us | 0.0130 us | 0.3281 |   3.36 KB |
+
+Operations per second: 1 000 000 / 2.478 = 403 551
+
+### A benchmark class to test the performance of the Dispatcher with a specific command object (BlankCommand).
+| Method               | Mean     | Error     | StdDev    | Gen0   | Allocated |
+|--------------------- |---------:|----------:|----------:|-------:|----------:|
+| DispatchBlankCommand | 2.032 us | 0.0128 us | 0.0113 us | 0.2441 |    2.5 KB |
+
+Operations per second: 1 000 000 / 2.032 = 492 125
